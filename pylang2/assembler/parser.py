@@ -1,17 +1,18 @@
 from lark import Lark
 
+
 grammar = Lark(r"""
     start : (struct | definition | function)*
 
-    struct : "struct" CNAME (_int | _float | _str)+
+    struct : "struct" CNAME types
+    types: (_int | _float | _str)+
 
     definition : "define" CNAME "=" _operand
     
-    function : "func" CNAME "locals" "=" locals "," "args" "=" args _instruction+
-    locals : INT
-    args : INT
+    function : "func" CNAME "locals" "=" INT "," "args" "=" INT instructions
     
-    _instruction : nullary_instruction | unary_instruction
+    instructions : _instruction+
+    _instruction : nullary_instruction | unary_instruction | label
     nullary_instruction : (HALT | NOOP
                         | ADD | SUB | MUL | DIV | MOD
                         | POP
@@ -22,6 +23,7 @@ grammar = Lark(r"""
                       | CALLFUNC
                       | NEWSTRUCT | LDFIELD | STFIELD
                       | NEWARRAY | LDELEM | STELEM) _operand
+    label: CNAME ":"
     
     HALT : "halt"
     NOOP : "noop"

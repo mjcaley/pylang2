@@ -12,6 +12,17 @@ lark-parser = "^0.10.0"
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.1"
 pytest-cov = "^2.10.1"
+coverage = {extras = ["toml"], version = "^5.3"}
+
+[tool.coverage.run]
+source = ["pylang2"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__"
+]
 
 [build-system]
 requires = ["poetry>=0.12"]

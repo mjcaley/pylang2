@@ -1,7 +1,6 @@
 from lark import Lark
 
-
-grammar = Lark(r"""
+grammar = r"""
     start : (struct | definition | function)*
 
     struct : "struct" CNAME types
@@ -9,17 +8,17 @@ grammar = Lark(r"""
 
     definition : "define" CNAME "=" _operand
     
-    function : "func" CNAME "locals" "=" INT "," "args" "=" INT instructions
+    function : "func" CNAME "locals" "=" INT "," "args" "=" INT statements
     
-    instructions : _instruction+
-    _instruction : nullary_instruction | unary_instruction | label
+    statements : _statement+
+    _statement : nullary_instruction | unary_instruction | label
     nullary_instruction : (HALT | NOOP
                         | ADD | SUB | MUL | DIV | MOD
                         | POP
                         | JMP | JMPT | JMPF
+                        | TESTEQ | TESTNE | TESTLT | TESTGT
                         | CALLVIRT | RET)
     unary_instruction : (LDCONST | LDLOCAL | STLOCAL
-                      | TESTEQ | TESTNE | TESTLT | TESTGT
                       | CALLFUNC
                       | NEWSTRUCT | LDFIELD | STFIELD
                       | NEWARRAY | LDELEM | STELEM) _operand
@@ -86,4 +85,6 @@ grammar = Lark(r"""
     %import common.CNAME
     %import common.WS
     %ignore WS
-""", parser="lalr")
+"""
+
+parser = Lark(grammar, parser="lalr")

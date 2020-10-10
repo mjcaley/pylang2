@@ -61,59 +61,11 @@ class StructSymbol:
 
 
 @dataclass
+class DefinitionSymbol:
+    symbol: str
+
+
+@dataclass
 class SymbolTable:
     errors: list[Error] = field(default_factory=list)
     symbols: dict[str, Any] = field(default_factory=dict)
-
-
-class SymbolTableGenerator(Visitor):
-    def __init__(self):
-        self.symbol_table = SymbolTable()
-
-    def struct(self, tree):
-        name = tree.children[0]
-        types = [type_mapping[t.type] for t in tree.children[1].children]
-        if name.value not in self.symbol_table.symbols:
-            self.symbol_table.symbols[name.value] = StructSymbol(types)
-        else:
-            self.symbol_table.errors.append(Redefinition(
-                name.value,
-                name.line,
-                name.column
-            ))
-
-    def definition(self, tree):
-        name = tree.children[0]
-        if name not in self.symbol_table.symbols:
-            self.symbol_table.symbols[name.value] = ConstantSymbol(None, tree[1])
-        else:
-            self.symbol_table.errors.append(Redefinition(
-                name.value,
-                name.line,
-                name.column)
-            )
-
-    def label(self, tree):
-        name = tree.children[0]
-        if name not in self.symbol_table.symbols:
-            self.symbol_table.symbols[name.value] = LabelSymbol()
-        else:
-            self.symbol_table.errors.append(Redefinition(
-                name.value,
-                name.line,
-                name.column
-            ))
-
-    def function(self, tree):
-        name = tree.children[0]
-        num_locals = tree.children[1].value
-        num_args = tree.children[2].value
-
-        if name.value not in self.symbol_table.symbols:
-            self.symbol_table.symbols[name.value] = FunctionSymbol(int(num_locals), int(num_args))
-        else:
-            self.symbol_table.errors.append(Redefinition(
-                name.value,
-                name.line,
-                name.column)
-            )

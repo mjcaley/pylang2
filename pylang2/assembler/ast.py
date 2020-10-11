@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 from enum import auto, Enum
+from functools import singledispatchmethod
+from pprint import pprint
 from typing import Any
 
 from lark import Transformer, Discard, v_args
@@ -36,6 +38,7 @@ class Instruction(Enum):
     NewArray = auto()
     LdElem = auto()
     StElem = auto()
+
 
 instruction_mapping = {
     "HALT": Instruction.Halt,
@@ -136,15 +139,17 @@ class ToAST(Transformer):
         raise Discard()
 
     @v_args(inline=True)
-    def struct(self, name_token, *type_tokens):
+    def struct(self, name_token, types):
         symbol = name_token.value
-        types = [type_mapping[t.type] for t in type_tokens]
         if symbol in self.symbols:
             self.errors.append(Redefinition(symbol, name_token.line, name_token.column))
         else:
             self.symbols[symbol] = StructSymbol(types)
 
         raise Discard()
+
+    def types(self, tree):
+        return [type_mapping[t.type] for t in tree]
 
     @v_args(inline=True)
     def function(self, name_token, locals_token, args_token, statements):
@@ -215,3 +220,55 @@ class ToAST(Transformer):
     @v_args(inline=True)
     def binding(self, token):
         return ASTOperand(token.value)
+
+
+class ASTPrinter:
+    def __init__(self, indent="    "):
+        self.indent = indent
+        self.level = indent
+
+    def increment(self):
+        self.indent += self.level
+
+    def decrement(self):
+        self.indent = self.indent[:len(self.level)]
+
+    @singledispatchmethod
+    def visit(self, args):
+        raise NotImplementedError
+
+    @visit.register
+    def _(self, arg: ASTRoot):
+        print(f"Symbols: {pprint(arg.symbols)}")
+        print(f"ASTRoot")
+        self.increment()
+        for function in arg.functions:
+            self.visit(function)
+        self.decrement()
+
+    @visit.register
+    def _(self, arg: ASTFunction):
+        print(f"ASTFunction(name={arg.symbol}")
+        self.increment()
+        for statement in arg.statements:
+            self.visit(statement)
+        self.decrement()
+
+    @visit.register
+    def _(self, arg: ASTNullaryInstruction):
+        print(f"ASTNullaryInstruction {arg.instruction}")
+
+    @visit.register
+    def _(self, arg: ASTUnaryInstruction):
+        print(f"ASTUnaryInstruction {arg.instruction}")
+        self.increment()
+        self.visit(arg.operand)
+        self.decrement()
+
+    @visit.register
+    def _(self, arg: ASTLabel):
+        print(f"ASTLabel: {arg.symbol}")
+
+    @visit.register
+    def _(self, arg: ASTOperand):
+        print(f"ASTOperand: {arg.symbol}")

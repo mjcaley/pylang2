@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import auto, Enum
 from functools import singledispatchmethod
-from pprint import pprint
+from pprint import pformat
 from typing import Any
 
 from lark import Transformer, Discard, v_args
@@ -224,7 +224,7 @@ class ToAST(Transformer):
 
 class ASTPrinter:
     def __init__(self, indent="    "):
-        self.indent = indent
+        self.indent = ""
         self.level = indent
 
     def increment(self):
@@ -239,8 +239,8 @@ class ASTPrinter:
 
     @visit.register
     def _(self, arg: ASTRoot):
-        print(f"Symbols: {pprint(arg.symbols)}")
-        print(f"ASTRoot")
+        print(f"{self.indent}Symbols: {pformat(arg.symbols)}")
+        print(f"{self.indent}ASTRoot")
         self.increment()
         for function in arg.functions:
             self.visit(function)
@@ -248,7 +248,7 @@ class ASTPrinter:
 
     @visit.register
     def _(self, arg: ASTFunction):
-        print(f"ASTFunction(name={arg.symbol}")
+        print(f"{self.indent}ASTFunction(name={arg.symbol})")
         self.increment()
         for statement in arg.statements:
             self.visit(statement)
@@ -256,19 +256,19 @@ class ASTPrinter:
 
     @visit.register
     def _(self, arg: ASTNullaryInstruction):
-        print(f"ASTNullaryInstruction {arg.instruction}")
+        print(f"{self.indent}ASTNullaryInstruction {arg.instruction}")
 
     @visit.register
     def _(self, arg: ASTUnaryInstruction):
-        print(f"ASTUnaryInstruction {arg.instruction}")
+        print(f"{self.indent}ASTUnaryInstruction {arg.instruction}")
         self.increment()
         self.visit(arg.operand)
         self.decrement()
 
     @visit.register
     def _(self, arg: ASTLabel):
-        print(f"ASTLabel: {arg.symbol}")
+        print(f"{self.indent}ASTLabel: {arg.symbol}")
 
     @visit.register
     def _(self, arg: ASTOperand):
-        print(f"ASTOperand: {arg.symbol}")
+        print(f"{self.indent}ASTOperand: {arg.symbol}")

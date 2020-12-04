@@ -2,12 +2,80 @@ from dataclasses import dataclass, field
 from enum import auto, Enum
 from functools import singledispatchmethod
 from pprint import pformat
-from typing import Any
+from typing import Any, Optional, Union
 
 from lark import Transformer, Discard, v_args
 
 from .errors import Error, Redefinition
-from .symbol_table import Type, type_mapping, FunctionSymbol, LabelSymbol, ConstantSymbol, StructSymbol
+
+
+class Type(Enum):
+    Int8 = auto()
+    Int16 = auto()
+    Int32 = auto()
+    Int64 = auto()
+    UInt8 = auto()
+    UInt16 = auto()
+    UInt32 = auto()
+    UInt64 = auto()
+    Float32 = auto()
+    Float64 = auto()
+    Address = auto()
+    String = auto()
+
+
+type_mapping = {
+    "I8": Type.Int8,
+    "I16": Type.Int16,
+    "I32": Type.Int32,
+    "I64": Type.Int64,
+    "U8": Type.UInt8,
+    "U16": Type.UInt16,
+    "U32": Type.UInt32,
+    "U64": Type.UInt64,
+    "F32": Type.Float32,
+    "F64": Type.Float64,
+    "ADDR": Type.Address,
+    "STR": Type.String
+}
+
+
+class Symbol:
+    pass
+
+
+@dataclass
+class FunctionSymbol(Symbol):
+    locals: int
+    arguments: int
+    address: Optional[int] = None
+
+
+@dataclass
+class LabelSymbol(Symbol):
+    address: Optional[int] = None
+
+
+@dataclass
+class StructSymbol(Symbol):
+    types: list[Type]
+
+    def __hash__(self):
+        return hash(self.types)
+
+
+@dataclass
+class DefinitionSymbol(Symbol):
+    symbol: str
+
+
+@dataclass
+class Constant:
+    type_: Optional[Type]
+    value: Any
+
+    def __hash__(self):
+        return hash((self.__class__, self.type_, self.value))
 
 
 class Instruction(Enum):
@@ -72,11 +140,6 @@ instruction_mapping = {
 
 
 @dataclass
-class ASTOperand:
-    symbol: str
-
-
-@dataclass
 class ASTStatement:
     pass
 
@@ -89,7 +152,7 @@ class ASTNullaryInstruction(ASTStatement):
 @dataclass
 class ASTUnaryInstruction(ASTStatement):
     instruction: Instruction
-    operand: ASTOperand
+    operand: Union[Constant, str]
 
 
 @dataclass
@@ -106,39 +169,33 @@ class ASTFunction:
 @dataclass
 class ASTRoot:
     errors: list[Error] = field(default_factory=list)
-    symbols: dict[str, Any] = field(default_factory=dict)
+    symbol_table: dict[str, Symbol] = field(default_factory=dict)
+    constants: set[Constant] = field(default_factory=set)
     functions: list[ASTFunction] = field(default_factory=list)
 
 
+@v_args(inline=True)
 class ToAST(Transformer):
     def __init__(self, *args, **kwargs) -> None:
         self.errors: list[Error] = list()
         self.symbols: dict[str, Any] = dict()
+        self.constants: set[Constant] = set()
 
         super().__init__(*args, **kwargs)
 
-    @staticmethod
-    def literal_name(type: str, line: int, column: int) -> str:
-        return f"lit_{type}L{line}C{column}"
-
-    @staticmethod
-    def label_name(name: str) -> str:
-        return f"lbl_{name}"
-
+    @v_args(inline=False)
     def start(self, tree):
-        return ASTRoot(self.errors, self.symbols, tree)
+        return ASTRoot(self.errors, self.symbols, self.constants, tree)
 
-    @v_args(inline=True)
     def definition(self, name_token, operand):
         symbol = name_token.value
         if symbol in self.symbols:
             self.errors.append(Redefinition(symbol, name_token.line, name_token.column))
         else:
-            self.symbols[symbol] = self.symbols[operand.symbol]
+            self.symbols[symbol] = operand
 
         raise Discard()
 
-    @v_args(inline=True)
     def struct(self, name_token, types):
         symbol = name_token.value
         if symbol in self.symbols:
@@ -148,10 +205,10 @@ class ToAST(Transformer):
 
         raise Discard()
 
+    @v_args(inline=False)
     def types(self, tree):
         return [type_mapping[t.type] for t in tree]
 
-    @v_args(inline=True)
     def function(self, name_token, locals_token, args_token, statements):
         symbol = name_token.value
         locals = int(locals_token.value)
@@ -160,66 +217,57 @@ class ToAST(Transformer):
         if symbol in self.symbols:
             self.errors.append(Redefinition(symbol, name_token.line, name_token.column))
         else:
-            self.symbols[symbol] = FunctionSymbol(locals, args, None)
+            self.symbols[symbol] = FunctionSymbol(locals, args)
             return ASTFunction(symbol, statements)
 
-    @v_args(inline=True)
     def statements(self, *stmts):
         return stmts
 
-    @v_args(inline=True)
     def nullary_instruction(self, ins_token):
         instruction = instruction_mapping[ins_token.type]
 
         return ASTNullaryInstruction(instruction)
 
-    @v_args(inline=True)
     def unary_instruction(self, ins_token, operand):
         instruction = instruction_mapping[ins_token.type]
 
         return ASTUnaryInstruction(instruction, operand)
 
-    @v_args(inline=True)
     def label(self, token):
-        symbol = self.label_name(token.value)
+        symbol = token.value
         if symbol in self.symbols:
             self.errors.append(Redefinition(symbol, token.line, token.column))
         else:
-            self.symbols[symbol] = LabelSymbol(None)
+            self.symbols[symbol] = LabelSymbol(symbol)
 
         return ASTLabel(symbol)
 
-    @v_args(inline=True)
     def int_operand(self, value, type_token=None):
         type_def = "I32"
         if type_token:
             type_def = type_token.type
-        symbol_name = self.literal_name(type_def, value.line, value.column)
 
-        self.symbols[symbol_name] = ConstantSymbol(type_mapping[type_def], int(value.value))
+        constant = Constant(type_mapping[type_def], int(value.value))
+        self.constants.add(constant)
 
-        return ASTOperand(symbol_name)
+        return constant
 
-    @v_args(inline=True)
     def float_operand(self, value, type_token):
         type_def = type_mapping[type_token.type]
-        symbol_name = self.literal_name(type_def, value.line, value.column)
 
-        self.symbols[symbol_name] = ConstantSymbol(type_def, float(value.value))
+        constant = Constant(type_def, float(value.value))
+        self.constants.add(constant)
 
-        return ASTOperand(symbol_name)
+        return constant
 
-    @v_args(inline=True)
     def str_operand(self, value, _=None):
-        symbol_name = self.literal_name("str", value.line, value.column)
+        constant = Constant(Type.String, value.value)
+        self.constants.add(constant)
 
-        self.symbols[symbol_name] = ConstantSymbol(Type.String, value.value)
+        return constant
 
-        return ASTOperand(symbol_name)
-
-    @v_args(inline=True)
     def binding(self, token):
-        return ASTOperand(token.value)
+        return token.value
 
 
 class ASTPrinter:
@@ -239,7 +287,8 @@ class ASTPrinter:
 
     @visit.register
     def _(self, arg: ASTRoot):
-        print(f"{self.indent}Symbols: {pformat(arg.symbols)}")
+        print(f"{self.indent}Symbols: {pformat(arg.symbol_table)}")
+        print(f"{self.indent}Constants: {pformat(arg.constants)}")
         print(f"{self.indent}ASTRoot")
         self.increment()
         for function in arg.functions:
@@ -270,5 +319,9 @@ class ASTPrinter:
         print(f"{self.indent}ASTLabel: {arg.symbol}")
 
     @visit.register
-    def _(self, arg: ASTOperand):
-        print(f"{self.indent}ASTOperand: {arg.symbol}")
+    def _(self, arg: Constant):
+        print(f"{self.indent}Constant: {arg.type_}, {arg.value}")
+
+    @visit.register
+    def _(self, arg: str):
+        print(f"{self.indent}Symbol: {arg}")

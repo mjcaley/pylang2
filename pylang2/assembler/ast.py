@@ -36,7 +36,7 @@ type_mapping = {
     "F32": Type.Float32,
     "F64": Type.Float64,
     "ADDR": Type.Address,
-    "STR": Type.String
+    "STR": Type.String,
 }
 
 
@@ -274,7 +274,7 @@ class ASTPrinter:
         self.indent += self.level
 
     def decrement(self):
-        self.indent = self.indent[:len(self.level)]
+        self.indent = self.indent[: len(self.level)]
 
     @singledispatchmethod
     def visit(self, args):

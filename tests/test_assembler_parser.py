@@ -9,11 +9,13 @@ from pylang2.assembler.parser import grammar
 def parser():
     def inner(start_rule):
         return Lark(grammar, start=start_rule, parser="lalr")
+
     return inner
 
 
 def test_parses_start(parser):
-    result = parser("start").parse("""
+    result = parser("start").parse(
+        """
         struct String
             u64
             addr
@@ -26,7 +28,8 @@ def test_parses_start(parser):
             ldlocal 1
             add
             ret
-    """)
+    """
+    )
 
     assert "struct" == result.children[0].data
     assert "definition" == result.children[1].data
@@ -35,19 +38,22 @@ def test_parses_start(parser):
 
 
 def test_parses_struct(parser):
-    result = parser("struct").parse("""
+    result = parser("struct").parse(
+        """
         struct Object
             i32
             u8
             addr
-    """)
+    """
+    )
 
     assert "Object" == result.children[0].value
     assert "types" == result.children[1].data
 
 
 def test_parses_types(parser):
-    result = parser("types").parse("""
+    result = parser("types").parse(
+        """
         i8
         i16
         i32
@@ -60,7 +66,8 @@ def test_parses_types(parser):
         f64
         str
         addr
-    """)
+    """
+    )
 
     assert "i8" == result.children[0].value
     assert "i16" == result.children[1].value
@@ -84,13 +91,15 @@ def test_parses_definition(parser):
 
 
 def test_parses_function(parser):
-    result = parser("function").parse("""
+    result = parser("function").parse(
+        """
         func add locals=2, args=2
             ldlocal 0
             ldlocal 1
             add
             ret
-    """)
+    """
+    )
 
     assert "add" == result.children[0].value
     assert "2" == result.children[1].value
@@ -98,54 +107,63 @@ def test_parses_function(parser):
     assert "statements" == result.children[3].data
 
 
-@pytest.mark.parametrize("test_input,expected", [
-    ("noop", "nullary_instruction"),
-    ("ldlocal 42 i32", "unary_instruction"),
-    ("label_name:", "label")
-])
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        ("noop", "nullary_instruction"),
+        ("ldlocal 42 i32", "unary_instruction"),
+        ("label_name:", "label"),
+    ],
+)
 def test_parses_statement(parser, test_input, expected):
     result = parser("statements").parse(test_input)
 
     assert expected == result.children[0].data
 
 
-@pytest.mark.parametrize("test_input,expected", [
-    ("halt", "HALT"),
-    ("noop", "NOOP"),
-    ("add", "ADD"),
-    ("sub", "SUB"),
-    ("mul", "MUL"),
-    ("div", "DIV"),
-    ("mod", "MOD"),
-    ("pop", "POP"),
-    ("jmp", "JMP"),
-    ("jmpt", "JMPT"),
-    ("jmpf", "JMPF"),
-    ("testeq", "TESTEQ"),
-    ("testne", "TESTNE"),
-    ("testgt", "TESTGT"),
-    ("testlt", "TESTLT"),
-    ("callvirt", "CALLVIRT"),
-    ("ret", "RET"),
-])
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        ("halt", "HALT"),
+        ("noop", "NOOP"),
+        ("add", "ADD"),
+        ("sub", "SUB"),
+        ("mul", "MUL"),
+        ("div", "DIV"),
+        ("mod", "MOD"),
+        ("pop", "POP"),
+        ("jmp", "JMP"),
+        ("jmpt", "JMPT"),
+        ("jmpf", "JMPF"),
+        ("testeq", "TESTEQ"),
+        ("testne", "TESTNE"),
+        ("testgt", "TESTGT"),
+        ("testlt", "TESTLT"),
+        ("callvirt", "CALLVIRT"),
+        ("ret", "RET"),
+    ],
+)
 def test_parses_nullary_instruction(parser, test_input, expected):
     result = parser("nullary_instruction").parse(test_input)
 
     assert expected == result.children[0].type
 
 
-@pytest.mark.parametrize("test_input,expected", [
-    ("ldconst 42", "LDCONST"),
-    ("ldlocal 42", "LDLOCAL"),
-    ("stlocal 42", "STLOCAL"),
-    ("callfunc 42", "CALLFUNC"),
-    ("newstruct 42", "NEWSTRUCT"),
-    ("ldfield 42", "LDFIELD"),
-    ("stfield 42", "STFIELD"),
-    ("newarray 42", "NEWARRAY"),
-    ("ldelem 42", "LDELEM"),
-    ("stelem 42", "STELEM"),
-])
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        ("ldconst 42", "LDCONST"),
+        ("ldlocal 42", "LDLOCAL"),
+        ("stlocal 42", "STLOCAL"),
+        ("callfunc 42", "CALLFUNC"),
+        ("newstruct 42", "NEWSTRUCT"),
+        ("ldfield 42", "LDFIELD"),
+        ("stfield 42", "STFIELD"),
+        ("newarray 42", "NEWARRAY"),
+        ("ldelem 42", "LDELEM"),
+        ("stelem 42", "STELEM"),
+    ],
+)
 def test_parses_unary_instruction(parser, test_input, expected):
     result = parser("unary_instruction").parse(test_input)
 
@@ -172,16 +190,19 @@ def test_parses_label(parser):
 #     assert expected == result.data
 
 
-@pytest.mark.parametrize("test_input,expected", [
-    ("i8", "I8"),
-    ("i16", "I16"),
-    ("i32", "I32"),
-    ("i64", "I64"),
-    ("u8", "U8"),
-    ("u16", "U16"),
-    ("u32", "U32"),
-    ("u64", "U64"),
-])
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        ("i8", "I8"),
+        ("i16", "I16"),
+        ("i32", "I32"),
+        ("i64", "I64"),
+        ("u8", "U8"),
+        ("u16", "U16"),
+        ("u32", "U32"),
+        ("u64", "U64"),
+    ],
+)
 def test_parses_int_operand(parser, test_input, expected):
     result = parser("int_operand").parse(f"42 {test_input}")
 
@@ -197,10 +218,13 @@ def test_parses_int_operand_without_type(parser):
     assert "42" == result.children[0].value
 
 
-@pytest.mark.parametrize("test_input,expected", [
-    ("f32", "F32"),
-    ("f64", "F64"),
-])
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        ("f32", "F32"),
+        ("f64", "F64"),
+    ],
+)
 def test_parses_float_operand(parser, test_input, expected):
     result = parser("float_operand").parse(f"42.0 {test_input}")
 

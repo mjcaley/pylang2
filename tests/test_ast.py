@@ -3,7 +3,17 @@ import pytest
 from lark import Lark, Discard
 
 from pylang2.assembler import parser
-from pylang2.assembler.ast import StructSymbol, ToAST, Type, ASTRoot, ASTFunction, ASTLabel, ASTStatement, Constant, Instruction
+from pylang2.assembler.ast import (
+    StructSymbol,
+    ToAST,
+    Type,
+    ASTRoot,
+    ASTFunction,
+    ASTLabel,
+    ASTStatement,
+    Constant,
+    Instruction,
+)
 from pylang2.assembler.errors import Redefinition
 
 
@@ -11,6 +21,7 @@ from pylang2.assembler.errors import Redefinition
 def ast_parser():
     def inner(start_rule):
         return Lark(parser.grammar, parser="lalr", start=start_rule)
+
     yield inner
 
 
@@ -30,9 +41,13 @@ def test_start(ast_parser, mocker):
 def test_definition(ast_parser):
     to_ast = ToAST()
     with pytest.raises(Discard):
-        to_ast.transform(ast_parser("definition").parse("""
+        to_ast.transform(
+            ast_parser("definition").parse(
+                """
         define name = 42 i32
-        """))
+        """
+            )
+        )
 
     assert "name" in to_ast.symbols
     assert to_ast.symbols["name"] in to_ast.constants
@@ -43,9 +58,13 @@ def test_definition_redefined(ast_parser, mocker):
     to_ast = ToAST()
     to_ast.symbols["name"] = mocker.stub()
     with pytest.raises(Discard):
-        to_ast.transform(ast_parser("definition").parse("""
+        to_ast.transform(
+            ast_parser("definition").parse(
+                """
         define name = 42 i32
-        """))
+        """
+            )
+        )
 
     assert isinstance(to_ast.errors[0], Redefinition)
 
@@ -53,10 +72,14 @@ def test_definition_redefined(ast_parser, mocker):
 def test_struct(ast_parser):
     to_ast = ToAST()
     with pytest.raises(Discard):
-        to_ast.transform(ast_parser("struct").parse("""
+        to_ast.transform(
+            ast_parser("struct").parse(
+                """
         struct name
             i32
-        """))
+        """
+            )
+        )
 
     assert "name" in to_ast.symbols
     assert isinstance(to_ast.symbols["name"], StructSymbol)
@@ -66,21 +89,29 @@ def test_struct_redefined(ast_parser, mocker):
     to_ast = ToAST()
     to_ast.symbols["name"] = mocker.stub()
     with pytest.raises(Discard):
-        to_ast.transform(ast_parser("struct").parse("""
+        to_ast.transform(
+            ast_parser("struct").parse(
+                """
         struct name
             i32
-        """))
+        """
+            )
+        )
 
     assert isinstance(to_ast.errors[0], Redefinition)
 
 
 def test_types(ast_parser):
     to_ast = ToAST()
-    result = to_ast.transform(ast_parser("types").parse("""
+    result = to_ast.transform(
+        ast_parser("types").parse(
+            """
     i32
     i64
     str
-    """))
+    """
+        )
+    )
 
     assert Type.Int32 == result[0]
     assert Type.Int64 == result[1]
@@ -89,10 +120,14 @@ def test_types(ast_parser):
 
 def test_func(ast_parser):
     to_ast = ToAST()
-    result = to_ast.transform(ast_parser("function").parse("""
+    result = to_ast.transform(
+        ast_parser("function").parse(
+            """
     func name locals=1, args=2
         ret
-    """))
+    """
+        )
+    )
 
     assert "name" in to_ast.symbols
     assert 1 == to_ast.symbols["name"].locals
@@ -104,20 +139,28 @@ def test_func(ast_parser):
 def test_func_redefined(ast_parser, mocker):
     to_ast = ToAST()
     to_ast.symbols["name"] = mocker.stub()
-    result = to_ast.transform(ast_parser("function").parse("""
+    result = to_ast.transform(
+        ast_parser("function").parse(
+            """
     func name locals=1, args=2
         ret
-    """))
+    """
+        )
+    )
 
     assert isinstance(to_ast.errors[0], Redefinition)
 
 
 def test_statements(ast_parser):
     to_ast = ToAST()
-    result = to_ast.transform(ast_parser("statements").parse("""
+    result = to_ast.transform(
+        ast_parser("statements").parse(
+            """
         ldconst 42
         ret
-    """))
+    """
+        )
+    )
 
     assert all([isinstance(statement, ASTStatement) for statement in result])
 

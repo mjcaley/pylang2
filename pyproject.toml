@@ -6,7 +6,7 @@ authors = ["Michael Caley <mjcaley@darkarctic.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 lark-parser = "^0.10.0"
 
 [tool.poetry.dev-dependencies]

@@ -35,6 +35,7 @@ def test_definition(ast_parser):
         """))
 
     assert "name" in to_ast.symbols
+    assert to_ast.symbols["name"] in to_ast.constants
     assert isinstance(to_ast.symbols["name"], Constant)
 
 

@@ -3,7 +3,7 @@ import pytest
 from lark import Lark, Discard
 
 from pylang2.assembler import parser
-from pylang2.assembler.ast import DefinitionSymbol, StructSymbol, ToAST, Type, ASTRoot, ASTFunction, ASTLabel, ASTStatement, Constant, Instruction
+from pylang2.assembler.ast import StructSymbol, ToAST, Type, ASTRoot, ASTFunction, ASTLabel, ASTStatement, Constant, Instruction
 from pylang2.assembler.errors import Redefinition
 
 

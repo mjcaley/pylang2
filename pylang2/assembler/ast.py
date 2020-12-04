@@ -65,11 +65,6 @@ class StructSymbol(Symbol):
 
 
 @dataclass
-class DefinitionSymbol(Symbol):
-    symbol: str
-
-
-@dataclass
 class Constant:
     type_: Optional[Type]
     value: Any

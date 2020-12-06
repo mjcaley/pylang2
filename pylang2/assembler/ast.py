@@ -6,8 +6,6 @@ from typing import Any, Optional, Union
 
 from lark import Transformer, Discard, v_args
 
-from .errors import Error, Redefinition
-
 
 class Type(Enum):
     Int8 = auto()
@@ -163,7 +161,6 @@ class ASTFunction:
 
 @dataclass
 class ASTRoot:
-    errors: list[Error] = field(default_factory=list)
     symbol_table: dict[str, Symbol] = field(default_factory=dict)
     constants: set[Constant] = field(default_factory=set)
     functions: list[ASTFunction] = field(default_factory=list)
@@ -172,7 +169,6 @@ class ASTRoot:
 @v_args(inline=True)
 class ToAST(Transformer):
     def __init__(self, *args, **kwargs) -> None:
-        self.errors: list[Error] = list()
         self.symbols: dict[str, Any] = dict()
         self.constants: set[Constant] = set()
 
@@ -180,23 +176,17 @@ class ToAST(Transformer):
 
     @v_args(inline=False)
     def start(self, tree):
-        return ASTRoot(self.errors, self.symbols, self.constants, tree)
+        return ASTRoot(self.symbols, self.constants, tree)
 
     def definition(self, name_token, operand):
         symbol = name_token.value
-        if symbol in self.symbols:
-            self.errors.append(Redefinition(symbol, name_token.line, name_token.column))
-        else:
-            self.symbols[symbol] = operand
+        self.symbols[symbol] = operand
 
         raise Discard()
 
     def struct(self, name_token, types):
         symbol = name_token.value
-        if symbol in self.symbols:
-            self.errors.append(Redefinition(symbol, name_token.line, name_token.column))
-        else:
-            self.symbols[symbol] = StructSymbol(types)
+        self.symbols[symbol] = StructSymbol(types)
 
         raise Discard()
 
@@ -209,11 +199,8 @@ class ToAST(Transformer):
         locals = int(locals_token.value)
         args = int(args_token.value)
 
-        if symbol in self.symbols:
-            self.errors.append(Redefinition(symbol, name_token.line, name_token.column))
-        else:
-            self.symbols[symbol] = FunctionSymbol(locals, args)
-            return ASTFunction(symbol, statements)
+        self.symbols[symbol] = FunctionSymbol(locals, args)
+        return ASTFunction(symbol, statements)
 
     def statements(self, *stmts):
         return stmts
@@ -230,10 +217,7 @@ class ToAST(Transformer):
 
     def label(self, token):
         symbol = token.value
-        if symbol in self.symbols:
-            self.errors.append(Redefinition(symbol, token.line, token.column))
-        else:
-            self.symbols[symbol] = LabelSymbol(symbol)
+        self.symbols[symbol] = LabelSymbol(symbol)
 
         return ASTLabel(symbol)
 

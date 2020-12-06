@@ -28,14 +28,12 @@ def ast_parser():
 def test_start(ast_parser, mocker):
     to_ast = ToAST()
     to_ast.symbols = mocker.stub()
-    to_ast.errors = mocker.stub()
     to_ast.constants = mocker.stub()
     result = to_ast.transform(ast_parser("start").parse(""))
 
     assert isinstance(result, ASTRoot)
     assert to_ast.symbols is result.symbol_table
     assert to_ast.constants is result.constants
-    assert to_ast.errors is result.errors
 
 
 def test_definition(ast_parser):
@@ -54,21 +52,6 @@ def test_definition(ast_parser):
     assert isinstance(to_ast.symbols["name"], Constant)
 
 
-def test_definition_redefined(ast_parser, mocker):
-    to_ast = ToAST()
-    to_ast.symbols["name"] = mocker.stub()
-    with pytest.raises(Discard):
-        to_ast.transform(
-            ast_parser("definition").parse(
-                """
-        define name = 42 i32
-        """
-            )
-        )
-
-    assert isinstance(to_ast.errors[0], Redefinition)
-
-
 def test_struct(ast_parser):
     to_ast = ToAST()
     with pytest.raises(Discard):
@@ -83,22 +66,6 @@ def test_struct(ast_parser):
 
     assert "name" in to_ast.symbols
     assert isinstance(to_ast.symbols["name"], StructSymbol)
-
-
-def test_struct_redefined(ast_parser, mocker):
-    to_ast = ToAST()
-    to_ast.symbols["name"] = mocker.stub()
-    with pytest.raises(Discard):
-        to_ast.transform(
-            ast_parser("struct").parse(
-                """
-        struct name
-            i32
-        """
-            )
-        )
-
-    assert isinstance(to_ast.errors[0], Redefinition)
 
 
 def test_types(ast_parser):
@@ -136,21 +103,6 @@ def test_func(ast_parser):
     assert "name" == result.symbol
 
 
-def test_func_redefined(ast_parser, mocker):
-    to_ast = ToAST()
-    to_ast.symbols["name"] = mocker.stub()
-    result = to_ast.transform(
-        ast_parser("function").parse(
-            """
-    func name locals=1, args=2
-        ret
-    """
-        )
-    )
-
-    assert isinstance(to_ast.errors[0], Redefinition)
-
-
 def test_statements(ast_parser):
     to_ast = ToAST()
     result = to_ast.transform(
@@ -186,14 +138,6 @@ def test_label(ast_parser):
 
     assert ASTLabel("label") == result
     assert "label" in to_ast.symbols
-
-
-def test_label_throws_redefined(ast_parser, mocker):
-    to_ast = ToAST()
-    to_ast.symbols["label"] = mocker.stub()
-    result = to_ast.transform(ast_parser("label").parse("label:"))
-
-    assert isinstance(to_ast.errors[0], Redefinition)
 
 
 def test_int_literal_with_type(ast_parser):

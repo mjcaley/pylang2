@@ -87,4 +87,4 @@ grammar = r"""
     %ignore WS
 """
 
-parser = Lark(grammar, parser="lalr")
+parser = Lark(grammar, parser="lalr", propagate_positions=True)

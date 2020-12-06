@@ -1,11 +1,8 @@
-from dataclasses import dataclass
-
-
-class Error:
+class Error(Exception):
     def __init__(self, message: str, line: int, column: int):
-        self.message = message
         self.line = line
         self.column = column
+        super().__init__(message)
 
 
 class Syntax(Error):
@@ -16,3 +13,13 @@ class Syntax(Error):
 class Redefinition(Syntax):
     def __init__(self, name: str, line: int, column: int):
         super().__init__(f"Redefinition of {name}", line, column)
+
+
+class ExpectedOperand(Syntax):
+    def __init__(self, line: int, column: int):
+        super().__init__("Unary instruction expects an operand", line, column)
+
+
+class UnexpectedOperand(Syntax):
+    def __init__(self, line: int, column: int):
+        super().__init__("Nullary instruction doesn't expect operand", line, column)

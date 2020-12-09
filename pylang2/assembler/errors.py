@@ -15,6 +15,11 @@ class Redefinition(Syntax):
         super().__init__(f"Redefinition of {name}", line, column)
 
 
+class Undefined(Syntax):
+    def __init__(self, name: str, line: int, column: int):
+        super().__init__(f"{name} undefined ", line, column)
+
+
 class ExpectedOperand(Syntax):
     def __init__(self, line: int, column: int):
         super().__init__("Unary instruction expects an operand", line, column)

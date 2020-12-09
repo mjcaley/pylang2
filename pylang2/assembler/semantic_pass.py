@@ -38,17 +38,17 @@ class CheckRedefinitions(Visitor):
 class UndefinedSymbols(Visitor):
     def __init__(self, *args, **kwargs):
         self.symbols = set()
-        self.bindings = set()
+        self.bindings = {}
         super().__init__(*args, **kwargs)
 
     @staticmethod
     def run_pass(tree):
         undef_pass = UndefinedSymbols()
         undef_pass.visit(tree)
-        undefined = undef_pass.bindings - undef_pass.symbols
+        undefined = undef_pass.bindings.keys() - undef_pass.symbols
         errors = []
         for binding in undefined:
-            errors.append(Undefined(binding, None, None))
+            errors.append(Undefined(binding, undef_pass.bindings[binding].line, undef_pass.bindings[binding].column))
 
         return tree, errors
 
@@ -65,4 +65,4 @@ class UndefinedSymbols(Visitor):
         self.symbols.add(tree.children[0])
 
     def binding(self, tree):
-        self.bindings.add(tree.children[0])
+        self.bindings[tree.children[0].value] = tree

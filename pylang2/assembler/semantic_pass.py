@@ -48,7 +48,13 @@ class UndefinedSymbols(Visitor):
         undefined = undef_pass.bindings.keys() - undef_pass.symbols
         errors = []
         for binding in undefined:
-            errors.append(Undefined(binding, undef_pass.bindings[binding].line, undef_pass.bindings[binding].column))
+            errors.append(
+                Undefined(
+                    binding,
+                    undef_pass.bindings[binding].line,
+                    undef_pass.bindings[binding].column,
+                )
+            )
 
         return tree, errors
 

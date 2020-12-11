@@ -4,8 +4,6 @@ from functools import singledispatchmethod
 from pprint import pformat
 from typing import Any, Optional, Union
 
-from lark import Transformer, Discard, v_args
-
 
 class Type(Enum):
     Int8 = auto()
@@ -20,46 +18,6 @@ class Type(Enum):
     Float64 = auto()
     Address = auto()
     String = auto()
-
-
-type_mapping = {
-    "I8": Type.Int8,
-    "I16": Type.Int16,
-    "I32": Type.Int32,
-    "I64": Type.Int64,
-    "U8": Type.UInt8,
-    "U16": Type.UInt16,
-    "U32": Type.UInt32,
-    "U64": Type.UInt64,
-    "F32": Type.Float32,
-    "F64": Type.Float64,
-    "ADDR": Type.Address,
-    "STR": Type.String,
-}
-
-
-class Symbol:
-    pass
-
-
-@dataclass
-class FunctionSymbol(Symbol):
-    locals: int
-    arguments: int
-    address: Optional[int] = None
-
-
-@dataclass
-class LabelSymbol(Symbol):
-    address: Optional[int] = None
-
-
-@dataclass
-class StructSymbol(Symbol):
-    types: list[Type]
-
-    def __hash__(self):
-        return hash(self.types)
 
 
 @dataclass
@@ -101,38 +59,29 @@ class Instruction(Enum):
     StElem = auto()
 
 
-instruction_mapping = {
-    "HALT": Instruction.Halt,
-    "NOOP": Instruction.Noop,
-    "ADD": Instruction.Add,
-    "SUB": Instruction.Sub,
-    "MUL": Instruction.Mul,
-    "DIV": Instruction.Div,
-    "MOD": Instruction.Mod,
-    "LDCONST": Instruction.LdConst,
-    "LDLOCAL": Instruction.LdLocal,
-    "STLOCAL": Instruction.StLocal,
-    "POP": Instruction.Pop,
-    "TESTEQ": Instruction.TestEQ,
-    "TESTNE": Instruction.TestNE,
-    "TESTLT": Instruction.TestLT,
-    "TESTGT": Instruction.TestGT,
-    "JMP": Instruction.Jmp,
-    "JMPT": Instruction.JmpT,
-    "JMPF": Instruction.JmpF,
-    "CALLFUNC": Instruction.CallFunc,
-    "CALLVIRT": Instruction.CallVirt,
-    "RET": Instruction.Ret,
-    "NEWSTRUCT": Instruction.NewStruct,
-    "LDFIELD": Instruction.LdField,
-    "STFIELD": Instruction.StField,
-    "NEWARRAY": Instruction.NewArray,
-    "LDELEM": Instruction.LdElem,
-    "STELEM": Instruction.StElem,
-}
+@dataclass
+class ASTOperand:
+    value: Constant
+    line: int
+    column: int
 
 
 @dataclass
+class ASTDefinition:
+    name: str
+    operand: ASTOperand
+    line: int
+    column: int
+
+
+@dataclass
+class ASTStruct:
+    name: str
+    types: list[Type]
+    line: int
+    column: int
+
+
 class ASTStatement:
     pass
 
@@ -140,113 +89,167 @@ class ASTStatement:
 @dataclass
 class ASTNullaryInstruction(ASTStatement):
     instruction: Instruction
+    line: int
+    column: int
 
 
 @dataclass
 class ASTUnaryInstruction(ASTStatement):
     instruction: Instruction
     operand: Union[Constant, str]
+    line: int
+    column: int
 
 
 @dataclass
 class ASTLabel(ASTStatement):
-    symbol: str
+    name: str
+    line: int
+    column: int
 
 
 @dataclass
 class ASTFunction:
-    symbol: str
+    name: str
+    num_locals: int
+    num_args: int
     statements: list[ASTStatement]
+    line: int
+    column: int
 
 
 @dataclass
 class ASTRoot:
+    children: list[Union[ASTDefinition, ASTStruct, ASTFunction]]
+
+
+# Symbol AST
+
+
+class Symbol:
+    pass
+
+
+@dataclass
+class FunctionSymbol(Symbol):
+    name: Constant
+    num_locals: int
+    num_args: int
+    address: Optional[int] = None
+
+
+@dataclass
+class LabelSymbol(Symbol):
+    address: Optional[int] = None
+
+
+@dataclass
+class StructSymbol(Symbol):
+    types: list[Type]
+
+    def __hash__(self):
+        return hash(self.types)
+
+
+@dataclass
+class ConstantSymbol(Symbol):
+    constant: Constant
+
+
+@dataclass
+class ASTSymbolFunction:
+    name: str
+    statements: list[ASTStatement]
+
+
+@dataclass
+class ASTSymbolTableRoot:
     symbol_table: dict[str, Symbol] = field(default_factory=dict)
     constants: set[Constant] = field(default_factory=set)
     functions: list[ASTFunction] = field(default_factory=list)
 
 
-@v_args(inline=True)
-class ToAST(Transformer):
-    def __init__(self, *args, **kwargs) -> None:
-        self.symbols: dict[str, Any] = dict()
-        self.constants: set[Constant] = set()
-
-        super().__init__(*args, **kwargs)
-
-    @v_args(inline=False)
-    def start(self, tree):
-        return ASTRoot(self.symbols, self.constants, tree)
-
-    def definition(self, name_token, operand):
-        symbol = name_token.value
-        self.symbols[symbol] = operand
-
-        raise Discard()
-
-    def struct(self, name_token, types):
-        symbol = name_token.value
-        self.symbols[symbol] = StructSymbol(types)
-
-        raise Discard()
-
-    @v_args(inline=False)
-    def types(self, tree):
-        return [type_mapping[t.type] for t in tree]
-
-    def function(self, name_token, locals_token, args_token, statements):
-        symbol = name_token.value
-        locals = int(locals_token.value)
-        args = int(args_token.value)
-
-        self.symbols[symbol] = FunctionSymbol(locals, args)
-        return ASTFunction(symbol, statements)
-
-    def statements(self, *stmts):
-        return stmts
-
-    def nullary_instruction(self, ins_token):
-        instruction = instruction_mapping[ins_token.type]
-
-        return ASTNullaryInstruction(instruction)
-
-    def unary_instruction(self, ins_token, operand):
-        instruction = instruction_mapping[ins_token.type]
-
-        return ASTUnaryInstruction(instruction, operand)
-
-    def label(self, token):
-        symbol = token.value
-        self.symbols[symbol] = LabelSymbol(symbol)
-
-        return ASTLabel(symbol)
-
-    def int_operand(self, value, type_token=None):
-        type_def = "I32"
-        if type_token:
-            type_def = type_token.type
-
-        constant = Constant(type_mapping[type_def], int(value.value))
-        self.constants.add(constant)
-
-        return constant
-
-    def float_operand(self, value, type_token):
-        type_def = type_mapping[type_token.type]
-
-        constant = Constant(type_def, float(value.value))
-        self.constants.add(constant)
-
-        return constant
-
-    def str_operand(self, value, _=None):
-        constant = Constant(Type.String, value.value)
-        self.constants.add(constant)
-
-        return constant
-
-    def binding(self, token):
-        return token.value
+# @v_args(inline=True)
+# class ToAST(Transformer):
+#     def __init__(self, *args, **kwargs) -> None:
+#         self.symbols: dict[str, Any] = dict()
+#         self.constants: set[Constant] = set()
+#
+#         super().__init__(*args, **kwargs)
+#
+#     @v_args(inline=False)
+#     def start(self, tree):
+#         return ASTRoot(self.symbols, self.constants, tree)
+#
+#     def definition(self, name_token, operand):
+#         symbol = name_token.value
+#         self.symbols[symbol] = operand
+#
+#         raise Discard()
+#
+#     def struct(self, name_token, types):
+#         symbol = name_token.value
+#         self.symbols[symbol] = StructSymbol(types)
+#
+#         raise Discard()
+#
+#     @v_args(inline=False)
+#     def types(self, tree):
+#         return [type_mapping[t.type] for t in tree]
+#
+#     def function(self, name_token, locals_token, args_token, statements):
+#         symbol = name_token.value
+#         locals = int(locals_token.value)
+#         args = int(args_token.value)
+#
+#         self.symbols[symbol] = FunctionSymbol(locals, args)
+#         return ASTFunction(symbol, statements)
+#
+#     def statements(self, *stmts):
+#         return stmts
+#
+#     def nullary_instruction(self, ins_token):
+#         instruction = instruction_mapping[ins_token.type]
+#
+#         return ASTNullaryInstruction(instruction)
+#
+#     def unary_instruction(self, ins_token, operand):
+#         instruction = instruction_mapping[ins_token.type]
+#
+#         return ASTUnaryInstruction(instruction, operand)
+#
+#     def label(self, token):
+#         symbol = token.value
+#         self.symbols[symbol] = LabelSymbol(symbol)
+#
+#         return ASTLabel(symbol)
+#
+#     def int_operand(self, value, type_token=None):
+#         type_def = "I32"
+#         if type_token:
+#             type_def = type_token.type
+#
+#         constant = Constant(type_mapping[type_def], int(value.value))
+#         self.constants.add(constant)
+#
+#         return constant
+#
+#     def float_operand(self, value, type_token):
+#         type_def = type_mapping[type_token.type]
+#
+#         constant = Constant(type_def, float(value.value))
+#         self.constants.add(constant)
+#
+#         return constant
+#
+#     def str_operand(self, value, _=None):
+#         constant = Constant(Type.String, value.value)
+#         self.constants.add(constant)
+#
+#         return constant
+#
+#     def binding(self, token):
+#         return token.value
 
 
 class ASTPrinter:

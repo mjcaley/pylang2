@@ -111,7 +111,7 @@ class PrintAST:
 
     @visit.register
     def _(self, arg: Constant):
-        print(f"{self.indent}Constant: {arg.type_}, {arg.value}")
+        print(f"{self.indent}{arg.__class__.__name__}: {arg.type_}, {arg.value}")
 
     @visit.register
     def _(self, arg: str):

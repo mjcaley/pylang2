@@ -1,7 +1,5 @@
 from dataclasses import dataclass, field
 from enum import auto, Enum
-from functools import singledispatchmethod
-from pprint import pformat
 from typing import Any, Optional, Union
 
 
@@ -124,7 +122,6 @@ class ASTRoot:
 
 
 # Symbol AST
-
 
 class Symbol:
     pass

@@ -31,11 +31,13 @@ class PrintAST:
         self.indent += self.level
 
     def decrement(self):
-        self.indent = self.indent[: len(self.level)]
+        self.indent = self.indent[: -len(self.level)]
 
     @singledispatchmethod
     def visit(self, args):
-        raise NotImplementedError(f"visit method for type {args.__class__.__name__} not defined")
+        raise NotImplementedError(
+            f"visit method for type {args.__class__.__name__} not defined"
+        )
 
     @visit.register
     def _(self, arg: ASTRoot):
@@ -68,6 +70,7 @@ class PrintAST:
         self.increment()
         for t in arg.types:
             self.visit(t)
+        self.decrement()
 
     @visit.register
     def _(self, arg: ASTFunction):

@@ -62,7 +62,6 @@ instruction_mapping = {
 }
 
 
-@v_args(inline=True)
 class ToAST(Transformer):
     @staticmethod
     def run_pass(tree):
@@ -74,11 +73,13 @@ class ToAST(Transformer):
     def start(self, children):
         return ASTRoot(children)
 
+    @v_args(inline=True)
     def definition(self, name_token, operand):
         return ASTDefinition(
             name_token.value, operand, name_token.line, name_token.column
         )
 
+    @v_args(inline=True)
     def struct(self, name_token, types):
         return ASTStruct(name_token.value, types, name_token.line, name_token.column)
 
@@ -86,6 +87,7 @@ class ToAST(Transformer):
     def types(self, tree):
         return [type_mapping[t.type] for t in tree]
 
+    @v_args(inline=True)
     def function(self, name_token, locals_token, args_token, statements):
         symbol = name_token.value
         num_locals = int(locals_token.value)
@@ -95,14 +97,17 @@ class ToAST(Transformer):
             symbol, num_locals, num_args, statements, name_token.line, name_token.column
         )
 
+    @v_args(inline=True)
     def statements(self, *stmts):
         return stmts
 
+    @v_args(inline=True)
     def nullary_instruction(self, ins_token):
         instruction = instruction_mapping[ins_token.type]
 
         return ASTNullaryInstruction(instruction, ins_token.line, ins_token.column)
 
+    @v_args(inline=True)
     def unary_instruction(self, ins_token, operand):
         instruction = instruction_mapping[ins_token.type]
 
@@ -110,11 +115,13 @@ class ToAST(Transformer):
             instruction, operand, ins_token.line, ins_token.column
         )
 
+    @v_args(inline=True)
     def label(self, token):
         symbol = token.value
 
         return ASTLabel(symbol, token.line, token.column)
 
+    @v_args(inline=True)
     def int_operand(self, value, type_token=None):
         type_def = "I32"
         if type_token:
@@ -124,6 +131,7 @@ class ToAST(Transformer):
 
         return ASTOperand(constant, value.line, value.column)
 
+    @v_args(inline=True)
     def float_operand(self, value, type_token):
         type_def = type_mapping[type_token.type]
 
@@ -131,10 +139,12 @@ class ToAST(Transformer):
 
         return ASTOperand(constant, value.line, value.column)
 
+    @v_args(inline=True)
     def str_operand(self, value, _=None):
         constant = Constant(Type.String, value.value)
 
         return ASTOperand(constant, value.line, value.column)
 
+    @v_args(inline=True)
     def binding(self, token):
         return ASTOperand(token.value, token.line, token.column)

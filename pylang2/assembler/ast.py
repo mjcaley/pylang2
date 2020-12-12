@@ -59,7 +59,7 @@ class Instruction(Enum):
 
 @dataclass
 class ASTOperand:
-    value: Constant
+    value: Union[Constant, str]
     line: int
     column: int
 
@@ -94,7 +94,7 @@ class ASTNullaryInstruction(ASTStatement):
 @dataclass
 class ASTUnaryInstruction(ASTStatement):
     instruction: Instruction
-    operand: Union[Constant, str]
+    operand: ASTOperand
     line: int
     column: int
 
@@ -163,4 +163,4 @@ class ASTSymbolFunction:
 class ASTSymbolTableRoot:
     symbol_table: dict[str, Symbol] = field(default_factory=dict)
     constants: set[Constant] = field(default_factory=set)
-    functions: list[ASTFunction] = field(default_factory=list)
+    functions: list[ASTSymbolFunction] = field(default_factory=list)

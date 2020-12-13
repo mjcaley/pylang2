@@ -73,7 +73,9 @@ def test_transform_function_returns_self():
 def test_transform_unary_instruction_returns_self_with_changed_operand(forty_two):
     b = BindingsToConstants()
     b.symbols["test"] = ConstantSymbol(forty_two)
-    result = b.transform(ASTUnaryInstruction(Instruction.LdConst, ASTOperand("test", 1, 1), 1, 1))
+    result = b.transform(
+        ASTUnaryInstruction(Instruction.LdConst, ASTOperand("test", 1, 1), 1, 1)
+    )
 
     assert forty_two == result.operand.value
 

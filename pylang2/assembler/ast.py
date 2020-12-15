@@ -171,7 +171,46 @@ class ASTSymbolTableRoot:
     functions: list[ASTSymbolFunction] = field(default_factory=list)
 
 
+# AST objects with pools
+
+class ASTPoolIndex:
+    pass
+
+
 @dataclass
-class ASTResolvedRoot:
-    constant_pool: list[Constant]
-    function_pool: list[FunctionSymbol]
+class ASTPoolConstant(ASTPoolIndex):
+    index: int
+
+
+class ASTPoolStatement:
+    pass
+
+
+@dataclass
+class ASTPoolFunction(ASTPoolIndex):
+    index: int
+    statements: list[ASTPoolStatement]
+
+
+@dataclass
+class ASTPoolStruct(ASTPoolIndex):
+    index: int
+
+
+@dataclass
+class ASTPoolNullaryInstruction(ASTPoolStatement):
+    instruction: Instruction
+
+
+@dataclass
+class ASTPoolUnaryInstruction(ASTPoolStatement):
+    instruction: Instruction
+    operand: Union[Constant, ASTPoolIndex]
+
+
+@dataclass
+class ASTPoolRoot:
+    constant_pool: list[ASTPoolConstant]
+    function_pool: list[ASTPoolFunction]
+    struct_pool : list[ASTPoolStruct]
+    functions: list[ASTPoolFunction]

@@ -133,6 +133,7 @@ class FunctionSymbol(Symbol):
     num_locals: int
     num_args: int
     address: Optional[int] = None
+    index: Optional[int] = None
 
 
 @dataclass
@@ -142,21 +143,25 @@ class LabelSymbol(Symbol):
 
 @dataclass
 class StructSymbol(Symbol):
+    name: Constant
     types: list[Type]
 
     def __hash__(self):
         return hash(self.types)
+    index: Optional[int] = None
 
 
 @dataclass
 class ConstantSymbol(Symbol):
     constant: Constant
+    index: Optional[int] = None
 
 
 @dataclass
 class ASTSymbolFunction:
     name: str
     statements: list[ASTStatement]
+    index: Optional[int] = None
 
 
 @dataclass

@@ -1,3 +1,5 @@
+import pytest
+
 from pylang2.assembler.ast import (
     ASTDefinition,
     ASTFunction,
@@ -71,13 +73,38 @@ def test_definition_returns_none():
     assert None is result
 
 
-def test_definition_constant_added_to_constants():
+@pytest.mark.parametrize("test_input", [
+    Constant(Type.Int64, 42),
+    Constant(Type.UInt64, 42),
+    Constant(Type.Float64, 4.2),
+    Constant(Type.Address, 42),
+    Constant(Type.String, "string"),
+])
+def test_definition_big_constants_added_to_constants(test_input):
     t = ToSymbolTableAST()
-    constant = Constant(Type.Int32, 42)
+    constant = test_input
     definition = ASTDefinition("test", ASTOperand(constant, 1, 2), 1, 2)
     result = t.transform(definition)
 
     assert constant in t.constants
+
+
+@pytest.mark.parametrize("test_input", [
+    Constant(Type.Int8, 42),
+    Constant(Type.Int16, 42),
+    Constant(Type.Int32, 42),
+    Constant(Type.UInt8, 42),
+    Constant(Type.UInt16, 42),
+    Constant(Type.UInt32, 42),
+    Constant(Type.Float32, 4.2),
+])
+def test_definition_small_constants_not_added_to_constants(test_input):
+    t = ToSymbolTableAST()
+    constant = test_input
+    definition = ASTDefinition("test", ASTOperand(constant, 1, 2), 1, 2)
+    result = t.transform(definition)
+
+    assert constant not in t.constants
 
 
 def test_definition_added_to_symbols():

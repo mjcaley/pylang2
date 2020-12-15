@@ -58,7 +58,7 @@ class ToSymbolTableAST:
         self.constants.add(name)
 
         types = [self.transform(t) for t in struct.types if t is not None]
-        self.symbols[struct.name] = StructSymbol(types)
+        self.symbols[struct.name] = StructSymbol(name, types)
 
     @transform.register
     def _(self, function: ASTFunction):
@@ -78,6 +78,7 @@ class ToSymbolTableAST:
 
     @transform.register
     def _(self, label: ASTLabel):
+
         self.symbols[label.name] = LabelSymbol()
 
     @transform.register

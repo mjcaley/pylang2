@@ -1,6 +1,6 @@
 from functools import singledispatchmethod
 
-from ..ast import ASTSymbolTableRoot, ASTSymbolFunction, ASTUnaryInstruction, ASTOperand
+from ..ast import ASTSymbolTableRoot, ASTSymbolFunction, ASTUnaryInstruction, ASTOperand, FunctionSymbol, LabelSymbol, StructSymbol, ConstantSymbol, Constant, Type
 
 
 class BindingsToConstants:
@@ -50,6 +50,25 @@ class BindingsToConstants:
 
     @transform.register
     def _(self, arg: str):
-        constant = self.symbols[arg].constant
+        # TODO: This assumes it's a constant, where it can be any symbol
+        constant = self.transform(self.symbols[arg])
 
         return constant
+
+    @transform.register
+    def _(self, arg: ConstantSymbol):
+        # TODO: If Int64 or Float64 needs constant index defined
+        return arg.constant
+
+    @transform.register
+    def _(self, arg: FunctionSymbol):
+        return Constant(Type.Int32, arg.address)
+
+    @transform.register
+    def _(self, arg: StructSymbol):
+        # TODO: Struct index needs to be defined
+        return Constant(Type.Int32, 0)
+
+    @transform.register
+    def _(self, arg: LabelSymbol):
+        return Constant(Type.Int32, arg.address)

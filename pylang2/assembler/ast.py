@@ -164,3 +164,9 @@ class ASTSymbolTableRoot:
     symbol_table: dict[str, Symbol] = field(default_factory=dict)
     constants: set[Constant] = field(default_factory=set)
     functions: list[ASTSymbolFunction] = field(default_factory=list)
+
+
+@dataclass
+class ASTResolvedRoot:
+    constant_pool: list[Constant]
+    function_pool: list[FunctionSymbol]

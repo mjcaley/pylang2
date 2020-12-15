@@ -5,6 +5,7 @@ from pylang2.assembler.passes.to_ast import ToAST
 from pylang2.assembler.passes.to_symbol_table import ToSymbolTableAST
 from pylang2.assembler.passes.print_ast import PrintAST
 from pylang2.assembler.passes.bindings_to_constants import BindingsToConstants
+from pylang2.assembler.passes.calculate_addresses import CalculateAddresses
 
 
 def main():
@@ -29,10 +30,14 @@ def main():
     ast = ToSymbolTableAST.run_pass(ast)
     PrintAST.run_pass(ast)
 
+    print("\nCalculate Addresses")
+    print("--------------------")
+    ast = CalculateAddresses.run_pass(ast)
+    PrintAST.run_pass(ast)
+
     print("\nBindings to Constants")
     print("----------------------")
     ast = BindingsToConstants.run_pass(ast)
-    print(ast)
     PrintAST.run_pass(ast)
 
 

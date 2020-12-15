@@ -15,6 +15,8 @@ from ..ast import (
     StructSymbol,
     LabelSymbol,
     ASTSymbolFunction,
+    ASTUnaryInstruction,
+    ASTOperand,
 )
 
 
@@ -47,7 +49,7 @@ class ToSymbolTableAST:
     @transform.register
     def _(self, definition: ASTDefinition):
         constant = definition.operand.value
-        self.constants.add(constant)
+        self.transform(constant)
         self.symbols[definition.name] = ConstantSymbol(constant)
 
     @transform.register
@@ -61,7 +63,7 @@ class ToSymbolTableAST:
     @transform.register
     def _(self, function: ASTFunction):
         name = Constant(Type.String, function.name)
-        self.constants.add(name)
+        self.transform(name)
         self.symbols[function.name] = FunctionSymbol(
             name, function.num_locals, function.num_args
         )
@@ -77,3 +79,22 @@ class ToSymbolTableAST:
     @transform.register
     def _(self, label: ASTLabel):
         self.symbols[label.name] = LabelSymbol()
+
+    @transform.register
+    def _(self, unary: ASTUnaryInstruction):
+        self.transform(unary.operand)
+
+        return unary
+
+    @transform.register
+    def _(self, operand: ASTOperand):
+        self.transform(operand.value)
+
+        return operand
+
+    @transform.register
+    def _(self, constant: Constant):
+        if constant.type_ in (Type.UInt64, Type.Int64, Type.Float64, Type.String, Type.Address):
+            self.constants.add(constant)
+
+        return constant

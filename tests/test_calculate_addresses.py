@@ -1,3 +1,9 @@
+from pylang2.assembler.passes.calculate_addresses2 import CalculateAddresses
+
+
+
+
+
 # import pytest
 
 # from pylang2.assembler.passes.calculate_addresses import CalculateAddresses

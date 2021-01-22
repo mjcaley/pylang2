@@ -2,6 +2,7 @@ import pytest
 
 from pylang2.assembler.passes.to_symbol_table import ToSymbolTable
 from pylang2.assembler.ast import (
+    SymbolTableNode,
     ErrorNode,
     LabelNode,
     StructNode,
@@ -12,6 +13,19 @@ from pylang2.assembler.ast import (
     SymbolType,
     Instruction,
 )
+
+
+def test_start_rule(parser):
+    tree = parser("start").parse("""
+    func test locals=0, args=1
+        ret
+    """)
+    symbol_table_pass = ToSymbolTable()
+    result = symbol_table_pass.transform(tree)
+
+    assert isinstance(result, SymbolTableNode)
+    assert symbol_table_pass.symbol_table is result.symbol_table
+    assert symbol_table_pass.constants is result.constants
 
 
 @pytest.mark.parametrize(

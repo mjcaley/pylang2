@@ -1,8 +1,8 @@
-from lark import Transformer, v_args
-
+from ...tree_transformer import TreeTransformer
 from ..ast import (
     Constant,
     SymbolType,
+    SymbolTableNode,
     ErrorNode,
     LabelNode,
     StructNode,
@@ -15,12 +15,16 @@ from ..ast import (
 )
 
 
-@v_args(tree=True)
-class ToSymbolTable(Transformer):
-    def __init__(self):
+# @v_args(tree=True)
+class ToSymbolTable(TreeTransformer):
+    def __init__(self, visit_tokens=True):
         self.symbol_table: dict[str, SymbolType] = dict()
         self.constants: set[Constant] = set()
-        super().__init__(visit_tokens=True)
+        super().__init__(visit_tokens)
+
+    def start(self, tree):
+        start_node = SymbolTableNode(tree.data, tree.children, tree.meta, self.symbol_table, self.constants)
+        return start_node
 
     def definition(self, tree):
         ident_token, operand = tree.children
@@ -51,7 +55,8 @@ class ToSymbolTable(Transformer):
             return ErrorNode(f"{symbol} already defined", [tree], tree.meta)
 
     def function(self, tree):
-        ident_token, locals_token, args_token, statements = tree.children
+        ident_token, locals_token, args_token, _ = tree.children
+        statements = tree.children[3:]
 
         symbol = str(ident_token)
         symbol_constant = Constant(Type.String, symbol)

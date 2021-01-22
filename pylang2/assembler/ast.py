@@ -77,10 +77,10 @@ class ErrorNode(Tree):
         super().__init__("error", children, meta)
 
 
-class SymbolTable(Tree):
-    def __init__(self, data, children, meta=None):
-        self.symbol_table: dict[str, SymbolType] = {}
-        self.constants: set[Constant] = set()
+class SymbolTableNode(Tree):
+    def __init__(self, data, children, meta=None, symbol_table=None, constants=None):
+        self.symbol_table: dict[str, SymbolType] = symbol_table or {}
+        self.constants: set[Constant] = constants or set()
         super().__init__(data, children, meta)
 
 

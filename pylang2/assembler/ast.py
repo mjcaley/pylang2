@@ -1,21 +1,55 @@
-from dataclasses import dataclass, field
-from enum import auto, Enum
-from typing import Any, Optional, Union
+from dataclasses import dataclass
+from enum import auto, Enum, unique
+from typing import Any, Optional
+
+from lark import Tree
 
 
+@unique
+class Instruction(Enum):
+    Halt = "halt"
+    Noop = "noop"
+    Add = "add"
+    Sub = "sub"
+    Mul = "mul"
+    Div = "div"
+    Mod = "mod"
+    LdConst = "ldconst"
+    LdLocal = "ldlocal"
+    StLocal = "stlocal"
+    Pop = "pop"
+    TestEQ = "testeq"
+    TestNE = "testne"
+    TestLT = "testlt"
+    TestGT = "testgt"
+    Jmp = "jmp"
+    JmpT = "jmpt"
+    JmpF = "jmpf"
+    CallFunc = "callfunc"
+    CallVirt = "callvirt"
+    Ret = "ret"
+    NewStruct = "newstruct"
+    LdField = "ldfield"
+    StField = "stfield"
+    NewArray = "newarray"
+    LdElem = "ldelem"
+    StElem = "stelem"
+
+
+@unique
 class Type(Enum):
-    Int8 = auto()
-    Int16 = auto()
-    Int32 = auto()
-    Int64 = auto()
-    UInt8 = auto()
-    UInt16 = auto()
-    UInt32 = auto()
-    UInt64 = auto()
-    Float32 = auto()
-    Float64 = auto()
-    Address = auto()
-    String = auto()
+    Int8 = "i8"
+    Int16 = "i16"
+    Int32 = "i32"
+    Int64 = "i64"
+    UInt8 = "u8"
+    UInt16 = "u16"
+    UInt32 = "u32"
+    UInt64 = "u64"
+    Float32 = "f32"
+    Float64 = "f64"
+    Address = "addr"
+    String = "str"
 
 
 @dataclass
@@ -27,140 +61,66 @@ class Constant:
         return hash((self.__class__, self.type_, self.value))
 
 
-class Instruction(Enum):
-    Halt = auto()
-    Noop = auto()
-    Add = auto()
-    Sub = auto()
-    Mul = auto()
-    Div = auto()
-    Mod = auto()
-    LdConst = auto()
-    LdLocal = auto()
-    StLocal = auto()
-    Pop = auto()
-    TestEQ = auto()
-    TestNE = auto()
-    TestLT = auto()
-    TestGT = auto()
-    Jmp = auto()
-    JmpT = auto()
-    JmpF = auto()
-    CallFunc = auto()
-    CallVirt = auto()
-    Ret = auto()
-    NewStruct = auto()
-    LdField = auto()
-    StField = auto()
-    NewArray = auto()
-    LdElem = auto()
-    StElem = auto()
+# Lark AST classes
+
+class SymbolType(Enum):
+    Unknown = auto()
+    Struct = auto()
+    Function = auto()
+    Constant = auto()
+    Label = auto()
 
 
-@dataclass
-class ASTOperand:
-    value: Union[Constant, str]
-    line: int
-    column: int
+class ErrorNode(Tree):
+    def __init__(self, message, children, meta=None):
+        self.message = message
+        super().__init__("error", children, meta)
 
 
-@dataclass
-class ASTDefinition:
-    name: str
-    operand: ASTOperand
-    line: int
-    column: int
+class SymbolTable(Tree):
+    def __init__(self, data, children, meta=None):
+        self.symbol_table: dict[str, SymbolType] = {}
+        self.constants: set[Constant] = set()
+        super().__init__(data, children, meta)
 
 
-@dataclass
-class ASTStruct:
-    name: str
-    types: list[Type]
-    line: int
-    column: int
+class SymbolNode(Tree):
+    def __init__(self, symbol: str, data, children, meta=None):
+        self.symbol = symbol
+        super().__init__(data, children, meta)
 
 
-class ASTStatement:
-    pass
+class StructNode(Tree):
+    def __init__(self, symbol: str, symbol_constant: Constant, data, children, meta=None):
+        self.symbol = symbol
+        self.symbol_constant = symbol_constant
+        super().__init__(data, children, meta)
 
 
-@dataclass
-class ASTNullaryInstruction(ASTStatement):
-    instruction: Instruction
-    line: int
-    column: int
+class FunctionNode(Tree):
+    def __init__(self, symbol: str, constant: Constant, num_locals: int, num_args: int, data, children, meta=None, address: int = None):
+        self.symbol = symbol
+        self.symbol_constant = constant
+        self.num_locals = num_locals
+        self.num_args = num_args
+        self.address = address
+        super().__init__(data, children, meta)
 
 
-@dataclass
-class ASTUnaryInstruction(ASTStatement):
-    instruction: Instruction
-    operand: ASTOperand
-    line: int
-    column: int
+class InstructionNode(Tree):
+    def __init__(self, instruction: Instruction, data, children, meta=None):
+        self.instruction = instruction
+        super().__init__(data, children, meta)
 
 
-@dataclass
-class ASTLabel(ASTStatement):
-    name: str
-    line: int
-    column: int
+class LabelNode(Tree):
+    def __init__(self, symbol: str, data, children, meta=None, address: int = None):
+        self.symbol = symbol
+        self.address = address
+        super().__init__(data, children, meta)
 
 
-@dataclass
-class ASTFunction:
-    name: str
-    num_locals: int
-    num_args: int
-    statements: list[ASTStatement]
-    line: int
-    column: int
-
-
-@dataclass
-class ASTRoot:
-    children: list[Union[ASTDefinition, ASTStruct, ASTFunction]]
-
-
-# Symbol AST
-
-class Symbol:
-    pass
-
-
-@dataclass
-class FunctionSymbol(Symbol):
-    name: Constant
-    num_locals: int
-    num_args: int
-    address: Optional[int] = None
-
-
-@dataclass
-class LabelSymbol(Symbol):
-    address: Optional[int] = None
-
-
-@dataclass
-class StructSymbol(Symbol):
-    types: list[Type]
-
-    def __hash__(self):
-        return hash(self.types)
-
-
-@dataclass
-class ConstantSymbol(Symbol):
-    constant: Constant
-
-
-@dataclass
-class ASTSymbolFunction:
-    name: str
-    statements: list[ASTStatement]
-
-
-@dataclass
-class ASTSymbolTableRoot:
-    symbol_table: dict[str, Symbol] = field(default_factory=dict)
-    constants: set[Constant] = field(default_factory=set)
-    functions: list[ASTSymbolFunction] = field(default_factory=list)
+class ConstantNode(Tree):
+    def __init__(self, constant, data, children, meta=None):
+        self.constant = constant
+        super().__init__(data, children, meta)

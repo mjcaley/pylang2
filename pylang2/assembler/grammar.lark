@@ -1,7 +1,7 @@
 start : (struct | definition | function)*
 
 struct : "struct" CNAME types
-types: (_int | _float | _str)+
+types: (_int | _float | _str | _addr)+
 
 definition : "define" CNAME "=" _operand
 
@@ -57,9 +57,10 @@ int_operand : SIGNED_INT _int?
 float_operand : SIGNED_FLOAT _float
 str_operand : ESCAPED_STRING STR?
 
-_int : I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | ADDR
+_int : I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64
 _float : F32 | F64
 _str : STR
+_addr : ADDR
 binding : CNAME
 
 I8 : "i8"

@@ -26,7 +26,9 @@ class BindingsToConstants:
     @transform.register
     def _(self, arg: ASTSymbolTableRoot):
         self.symbols = arg.symbol_table
-        arg.functions = self.transform([self.transform(function) for function in arg.functions])
+        arg.functions = self.transform(
+            [self.transform(function) for function in arg.functions]
+        )
 
         return arg
 

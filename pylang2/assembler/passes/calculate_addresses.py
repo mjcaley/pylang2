@@ -1,46 +1,52 @@
-from functools import singledispatchmethod
+from lark import Visitor
 
-from ..ast import ASTSymbolTableRoot, ASTSymbolFunction, ASTLabel, ASTNullaryInstruction, ASTUnaryInstruction
+from ..ast import Type
 
 
-class CalculateAddresses:
-    def __init__(self, symbols):
-        self.symbols = symbols
+class CalculateAddresses(Visitor):
+    def __init__(self):
+        self.current_address = 0
+        self.symbol_table = {}
+        super().__init__()
+
+    def visit(self, tree):
+        self.symbol_table = tree.symbol_table
+        self.visit_topdown(tree)
+
+    def start(self, _):
         self.current_address = 0
 
-    @staticmethod
-    def run_pass(tree):
-        c = CalculateAddresses(tree.symbol_table)
-        c.transform(tree)
+    def function(self, tree):
+        tree.address = self.current_address
 
-        return tree
-
-    @singledispatchmethod
-    def transform(self, arg):
-        return
-
-    @transform.register
-    def _(self, arg: ASTSymbolTableRoot):
-        for function in arg.functions:
-            self.transform(function)
-        arg.symbol_table = self.symbols
-
-        return arg
-
-    @transform.register
-    def _(self, arg: ASTSymbolFunction):
-        self.symbols[arg.name].address = self.current_address
-        for statement in arg.statements:
-            self.transform(statement)
-
-    @transform.register
-    def _(self, arg: ASTLabel):
-        self.symbols[arg.name].address = self.current_address
-
-    @transform.register
-    def _(self, _: ASTNullaryInstruction):
+    def nullary_instruction(self, tree):
+        tree.address = self.current_address
         self.current_address += 1
 
-    @transform.register
-    def _(self, _: ASTUnaryInstruction):
-        self.current_address += 5
+    def unary_instruction(self, tree):
+        tree.address = self.current_address
+        self.current_address += 1
+
+    def label(self, tree):
+        tree.address = self.current_address
+
+    def int_operand(self, tree):
+        operand_type = tree.constant.type_
+        if operand_type in [Type.UInt8, Type.Int8]:
+            self.current_address += 1
+        elif operand_type in [Type.UInt16, Type.Int16]:
+            self.current_address += 2
+        elif operand_type in [Type.UInt32, Type.Int32]:
+            self.current_address += 4
+        elif operand_type in [Type.UInt64, Type.Int64]:
+            self.current_address += 8
+
+    def float_operand(self, tree):
+        operand_type = tree.constant.type_
+        if operand_type == Type.Float32:
+            self.current_address += 4
+        elif operand_type == Type.Float64:
+            self.current_address += 8
+
+    def str_operand(self, _):
+        self.current_address += 4

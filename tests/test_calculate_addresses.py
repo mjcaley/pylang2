@@ -1,94 +1,149 @@
 import pytest
 
+from pylang2.assembler.ast import SymbolTableNode
+from pylang2.assembler.parser import parser
 from pylang2.assembler.passes.calculate_addresses import CalculateAddresses
-from pylang2.assembler.ast import (
-    ASTSymbolTableRoot,
-    ASTSymbolFunction,
-    ASTLabel,
-    ASTNullaryInstruction,
-    ASTUnaryInstruction,
-    ASTOperand,
-    FunctionSymbol,
-    LabelSymbol,
-    Constant,
-    Type,
-    Instruction,
-)
+from pylang2.assembler.passes.to_symbol_table import ToSymbolTable
 
 
-@pytest.fixture
-def tree():
-    func_name = Constant(Type.String, "function")
-    return ASTSymbolTableRoot(
-        {
-            "function": FunctionSymbol(Constant(Type.String, "function"), 1, 1),
-            "label": LabelSymbol(),
-        },
-        {func_name},
-        [
-            ASTSymbolFunction(
-                "function",
-                [
-                    ASTUnaryInstruction(
-                        Instruction.LdConst,
-                        ASTOperand(Constant(Type.Int32, 42), 2, 4),
-                        2,
-                        12,
-                    ),
-                    ASTLabel("label", 3, 4),
-                    ASTNullaryInstruction(Instruction.Ret, 4, 4),
-                ],
-            ),
-        ],
-    )
+def test_visit(mocker):
+    calculate_addresses_pass = CalculateAddresses()
+    visit_topdown_spy = mocker.spy(calculate_addresses_pass, 'visit_topdown')
+    tree = SymbolTableNode("mock", [])
+    calculate_addresses_pass.visit(tree)
+
+    assert visit_topdown_spy.called
 
 
-def test_default_values(mocker):
-    c = CalculateAddresses(mocker.stub())
+def test_init():
+    calculate_addresses_pass = CalculateAddresses()
 
-    assert 0 == c.current_address
-
-
-def test_run_pass(tree):
-    result = CalculateAddresses.run_pass(tree)
-
-    assert 0 == result.symbol_table["function"].address
-    assert 5 == result.symbol_table["label"].address
+    assert 0 == calculate_addresses_pass.current_address
 
 
-def test_root_returns_tree(tree):
-    c = CalculateAddresses(tree.symbol_table)
-    result = c.transform(tree)
+def test_start_rule():
+    tree = parser.parse("")
+    symbol_tree = ToSymbolTable().transform(tree)
+    calculate_addresses_pass = CalculateAddresses()
+    calculate_addresses_pass.visit_topdown(symbol_tree)
 
-    assert 0 == result.symbol_table["function"].address
-    assert 5 == result.symbol_table["label"].address
-
-
-def test_function_address_updated(mocker):
-    c = CalculateAddresses(mocker.stub())
-    c.symbols = {"test": FunctionSymbol(mocker.stub(), 1, 1)}
-    c.transform(ASTSymbolFunction("test", [mocker.stub()]))
-
-    assert 0 == c.symbols["test"].address
+    assert 0 == calculate_addresses_pass.current_address
 
 
-def test_label_address_updated(mocker):
-    c = CalculateAddresses(mocker.stub())
-    c.symbols = {"test": LabelSymbol()}
-    c.transform(ASTLabel("test", 1, 1))
+def test_function_rule():
+    tree = parser.parse("""
+        func test1 locals=0, args=0
+            ret
+        func test2 locals=0, args=0
+            ret
+    """)
+    symbol_tree = ToSymbolTable().transform(tree)
+    calculate_addresses_pass = CalculateAddresses()
+    calculate_addresses_pass.visit_topdown(symbol_tree)
 
-    assert 0 == c.symbols["test"].address
+    assert 0 == symbol_tree.children[0].address
+    assert 1 == symbol_tree.children[1].address
 
 
-def test_nullary_instruction_increments_by_1(mocker):
-    c = CalculateAddresses(mocker.stub())
-    c.transform(ASTNullaryInstruction(mocker.stub(), 1, 1))
+def test_nullary_instruction_rule():
+    tree = parser.parse("""
+        func test locals=0, args=0
+            noop
+            ret
+    """)
+    symbol_tree = ToSymbolTable().transform(tree)
+    calculate_addresses_pass = CalculateAddresses()
+    calculate_addresses_pass.visit_topdown(symbol_tree)
 
-    assert 1 == c.current_address
+    test_instructions = symbol_tree.children[0].children[0].children
+    assert 0 == test_instructions[0].address
+    assert 1 == test_instructions[1].address
 
 
-def test_unary_instruction_increments_by_5(mocker):
-    c = CalculateAddresses(mocker.stub())
-    c.transform(ASTUnaryInstruction(mocker.stub(), mocker.stub(), 1, 1))
+@pytest.mark.parametrize("test_input,expected", [
+    ("ldconst 40 i8", 2)
+])
+def test_unary_instruction_rule(test_input, expected):
+    tree = parser.parse(f"""
+        func test locals=0, args=0
+            {test_input}
+            ret
+    """)
+    symbol_tree = ToSymbolTable().transform(tree)
+    calculate_addresses_pass = CalculateAddresses()
+    calculate_addresses_pass.visit_topdown(symbol_tree)
 
-    assert 5 == c.current_address
+    test_instructions = symbol_tree.children[0].children[0].children
+    assert 0 == test_instructions[0].address
+    assert expected == test_instructions[1].address
+
+
+def test_label_rule():
+    tree = parser.parse(f"""
+        func function locals=0, args=0
+            noop
+            test:
+            ret
+    """)
+    symbol_tree = ToSymbolTable().transform(tree)
+    calculate_addresses_pass = CalculateAddresses()
+    calculate_addresses_pass.visit_topdown(symbol_tree)
+
+    test_instructions = symbol_tree.children[0].children[0].children
+    assert 1 == test_instructions[1].address
+
+
+@pytest.mark.parametrize("test_input,expected", [
+    ("ldconst 42 i8", 2),
+    ("ldconst 42 i16", 3),
+    ("ldconst 42 i32", 5),
+    ("ldconst 42 i64", 9),
+    ("ldconst 42 u8", 2),
+    ("ldconst 42 u16", 3),
+    ("ldconst 42 u32", 5),
+    ("ldconst 42 u64", 9),
+])
+def test_int_operand_rule(test_input, expected):
+    tree = parser.parse(f"""
+        func test locals=0, args=0
+            {test_input}
+            ret
+    """)
+    symbol_tree = ToSymbolTable().transform(tree)
+    calculate_addresses_pass = CalculateAddresses()
+    calculate_addresses_pass.visit_topdown(symbol_tree)
+
+    test_instructions = symbol_tree.children[0].children[0].children
+    assert expected == test_instructions[1].address
+
+
+@pytest.mark.parametrize("test_input,expected", [
+    ("ldconst 42.0 f32", 5),
+    ("ldconst 42.0 f64", 9),
+])
+def test_float_operand_rule(test_input, expected):
+    tree = parser.parse(f"""
+        func test locals=0, args=0
+            {test_input}
+            ret
+    """)
+    symbol_tree = ToSymbolTable().transform(tree)
+    calculate_addresses_pass = CalculateAddresses()
+    calculate_addresses_pass.visit_topdown(symbol_tree)
+
+    test_instructions = symbol_tree.children[0].children[0].children
+    assert expected == test_instructions[1].address
+
+
+def test_str_operand_rule():
+    tree = parser.parse(f"""
+        func test locals=0, args=0
+            ldconst "test"
+            ret
+    """)
+    symbol_tree = ToSymbolTable().transform(tree)
+    calculate_addresses_pass = CalculateAddresses()
+    calculate_addresses_pass.visit_topdown(symbol_tree)
+
+    test_instructions = symbol_tree.children[0].children[0].children
+    assert 5 == test_instructions[1].address

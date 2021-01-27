@@ -129,13 +129,6 @@ class InstructionNode(Tree):
         super().__init__(data, children, meta)
 
 
-class CompressedInstructionNode(Tree):
-    def __init__(self, instruction: Instruction, data, children, operand=None, meta=None):
-        self.instruction = instruction
-        self.operand = operand
-        super().__init__(data, children, meta)
-
-
 class LabelNode(Tree):
     def __init__(self, symbol: str, data, children, meta=None, address: int = None):
         self.symbol = symbol
@@ -147,3 +140,14 @@ class ConstantNode(Tree):
     def __init__(self, constant, data, children, meta=None):
         self.constant = constant
         super().__init__(data, children, meta)
+
+
+# AST objects
+
+class ASTNode(Tree):
+    def __init__(self, data, children, meta=None, constants=None):
+        self.constants = constants or []
+        super().__init__(data, children, meta)
+
+
+

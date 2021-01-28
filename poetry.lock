@@ -29,14 +29,6 @@ tests = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)"
 tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six"]
 
 [[package]]
-name = "binaryfile"
-version = "1.1.2"
-description = "A library for defining the structure of a binary file and then reading or writing it."
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[[package]]
 name = "black"
 version = "20.8b1"
 description = "The uncompromising code formatter."
@@ -73,6 +65,17 @@ description = "Cross-platform colored terminal text."
 category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+
+[[package]]
+name = "construct"
+version = "2.10.57"
+description = "A powerful declarative symmetric parser/builder for binary data"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.extras]
+extras = ["enum34", "numpy", "arrow", "ruamel.yaml"]
 
 [[package]]
 name = "coverage"
@@ -247,7 +250,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "c32d403d22e92dbb08c9e91ac55b07cdd169724aa1d0a81272fe3ed505f0ff06"
+content-hash = "ebd6d7d7c6b142e2a32500143537f91529bbe5b10fedfee94f99119fd515b107"
 
 [metadata.files]
 appdirs = [
@@ -262,10 +265,6 @@ attrs = [
     {file = "attrs-20.3.0-py2.py3-none-any.whl", hash = "sha256:31b2eced602aa8423c2aea9c76a724617ed67cf9513173fd3a4f03e3a929c7e6"},
     {file = "attrs-20.3.0.tar.gz", hash = "sha256:832aa3cde19744e49938b91fea06d69ecb9e649c93ba974535d08ad92164f700"},
 ]
-binaryfile = [
-    {file = "binaryfile-1.1.2-py3-none-any.whl", hash = "sha256:3443735b21396d967abe6fe7698005a0c9fef6fb1618982e804d0f4346e7c671"},
-    {file = "binaryfile-1.1.2.tar.gz", hash = "sha256:c139347cd85cb67e52f6b4a9d425da32e9d91ff3434b7a91538ac2f14c52ec9e"},
-]
 black = [
     {file = "black-20.8b1.tar.gz", hash = "sha256:1c02557aa099101b9d21496f8a914e9ed2222ef70336404eeeac8edba836fbea"},
 ]
@@ -276,6 +275,9 @@ click = [
 colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
+]
+construct = [
+    {file = "construct-2.10.57.tar.gz", hash = "sha256:e73c292817b4bb6640cd220ecb1bebff2f074decb65f7b7a4267e8d661ea2d4d"},
 ]
 coverage = [
     {file = "coverage-5.4-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:6d9c88b787638a451f41f97446a1c9fd416e669b4d9717ae4615bd29de1ac135"},

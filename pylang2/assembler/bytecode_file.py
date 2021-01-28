@@ -1,35 +1,32 @@
-import binaryfile
+from construct import Array, Bytes, Const, Struct, Int64ul, Int16ul, Rebuild, len_, this
 
 
-def string(f: binaryfile.fileformat.BinarySectionBase):
-    length = f.count("length", "string", 8)
-    f.bytes("string", length)
+FileFormat = Struct(
+    Const(b"pylang2"),
+    "version" / Int16ul,
 
+    # String pool
+    "string_count" / Rebuild(Int64ul, len_(this.strings)),
+    "strings" / Array(
+        this.string_count,
+        Struct(
+            "length" / Rebuild(Int64ul, len_(this.string)),
+            "string" / Bytes(this.length)
+        )
+    ),
 
-def string_pool(f: binaryfile.fileformat.BinarySectionBase):
-    f.array("strings")
-    count = f.count("num_strings", "strings", 8)
-    for i in range(count):
-        f.section("strings", string)
+    # Function pool
+    "function_count" / Rebuild(Int64ul, len_(this.functions)),
+    "functions" / Array(
+        this.function_count,
+        Struct(
+            "name_index" / Int64ul,
+            "locals" / Int64ul,
+            "args" / Int64ul,
+            "address" / Int64ul
+        )
+    ),
 
-
-def function(f: binaryfile.fileformat.BinarySectionBase):
-    f.uint("name_index", 8)
-    f.uint("locals", 8)
-    f.uint("args", 8)
-    f.uint("address", 8)
-
-
-def function_pool(f: binaryfile.fileformat.BinarySectionBase):
-    f.array("functions")
-    count = f.count("num_functions", "functions", 8)
-    for i in range(count):
-        f.section("functions", function)
-
-
-def file_spec(f: binaryfile.fileformat.BinarySectionBase):
-    f.byteorder = "little"
-    f.section("string_pool", string_pool)
-    f.section("function_pool", function_pool)
-    code_length = f.count("code_length", "code", 8)
-    f.bytes("code", code_length)
+    "code_length" / Rebuild(Int64ul, len_(this.code)),
+    "code" / Bytes(this.code_length)
+)

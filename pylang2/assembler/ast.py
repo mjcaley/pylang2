@@ -97,9 +97,10 @@ class SymbolNode(Tree):
 
 class StructNode(Tree):
     def __init__(
-        self, symbol: str, symbol_constant: Constant, data, children, meta=None
+        self, symbol: str, symbol_constant: Constant, data, children, meta=None, index=None
     ):
         self.symbol = symbol
+        self.index = index
         self.symbol_constant = symbol_constant
         super().__init__(data, children, meta)
 

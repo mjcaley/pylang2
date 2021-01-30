@@ -75,6 +75,8 @@ def test_struct_rule(parser):
     assert None is symbol_table_pass.symbol_table["test"].type_
     assert isinstance(result, StructNode)
     assert "test" == result.symbol
+    assert 0 == result.index
+    assert 1 == symbol_table_pass.struct_index
 
 
 def test_struct_rule_error_already_defined(parser):

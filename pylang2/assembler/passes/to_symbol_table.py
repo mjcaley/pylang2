@@ -21,6 +21,7 @@ class ToSymbolTable(TreeTransformer):
         self.symbol_table: dict[str, SymbolTableValue] = dict()
         self.constants: set[Constant] = set()
         self.function_index = 0
+        self.struct_index = 0
         super().__init__(visit_tokens)
 
     def start(self, tree):
@@ -53,7 +54,9 @@ class ToSymbolTable(TreeTransformer):
 
         if symbol not in self.symbol_table:
             self.symbol_table[symbol] = SymbolTableValue(SymbolKind.Struct, None)
-            return StructNode(symbol, name, tree.data, types, tree.meta)
+            index = self.struct_index
+            self.struct_index += 1
+            return StructNode(symbol, name, tree.data, types, tree.meta, index)
         else:
             return ErrorNode(f"{symbol} already defined", [tree], tree.meta)
 

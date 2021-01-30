@@ -20,6 +20,7 @@ class ToSymbolTable(TreeTransformer):
     def __init__(self, visit_tokens=True):
         self.symbol_table: dict[str, SymbolTableValue] = dict()
         self.constants: set[Constant] = set()
+        self.function_index = 0
         super().__init__(visit_tokens)
 
     def start(self, tree):
@@ -69,7 +70,7 @@ class ToSymbolTable(TreeTransformer):
         else:
             return ErrorNode(f"{symbol} already defined", [tree], tree.meta)
 
-        return FunctionNode(
+        function_node = FunctionNode(
             symbol,
             symbol_constant,
             int(locals_token),
@@ -77,7 +78,11 @@ class ToSymbolTable(TreeTransformer):
             tree.data,
             statements,
             tree.meta,
+            index=self.function_index
         )
+        self.function_index += 1
+
+        return function_node
 
     def nullary_instruction(self, tree):
         instruction_token = tree.children[0]

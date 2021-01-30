@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from enum import auto, Enum, unique
+from enum import auto, Enum, IntEnum, unique
 from typing import Any, Optional
 
 from lark import Tree
@@ -38,6 +38,7 @@ class Instruction(Enum):
 
 @unique
 class Type(Enum):
+    Void = None
     Int8 = "i8"
     Int16 = "i16"
     Int32 = "i32"
@@ -114,12 +115,14 @@ class FunctionNode(Tree):
         children,
         meta=None,
         address: int = None,
+        index: int = None,
     ):
         self.symbol = symbol
         self.symbol_constant = constant
         self.num_locals = num_locals
         self.num_args = num_args
         self.address = address
+        self.index = index
         super().__init__(data, children, meta)
 
 
@@ -142,12 +145,51 @@ class ConstantNode(Tree):
         super().__init__(data, children, meta)
 
 
-# AST objects
+# Code generation objects
 
-class ASTNode(Tree):
-    def __init__(self, data, children, meta=None, constants=None):
-        self.constants = constants or []
+class Bytecode(IntEnum):
+    Halt = auto()
+    Noop = auto()
+    Add = auto()
+    Sub = auto()
+    Mul = auto()
+    Div = auto()
+    Mod = auto()
+    LdConstI8 = auto()
+    LdConstI16 = auto()
+    LdConstI32 = auto()
+    LdConstI64 = auto()
+    LdConstU8 = auto()
+    LdConstU16 = auto()
+    LdConstU32 = auto()
+    LdConstU64 = auto()
+    LdConstF32 = auto()
+    LdConstF64 = auto()
+    LdConstStr = auto()
+    LdLocal = auto()
+    StLocal = auto()
+    Pop = auto()
+    TestEQ = auto()
+    TestNE = auto()
+    TestLT = auto()
+    TestGT = auto()
+    Jmp = auto()
+    JmpT = auto()
+    JmpF = auto()
+    CallFunc = auto()
+    CallVirt = auto()
+    Ret = auto()
+    NewStruct = auto()
+    LdField = auto()
+    StField = auto()
+    NewArray = auto()
+    LdElem = auto()
+    StElem = auto()
+
+
+class CodeGenRootNode(Tree):
+    def __init__(self, data, children, meta=None):
+        self.function_pool = []
+        self.string_pool = []
+        self.code = b''
         super().__init__(data, children, meta)
-
-
-

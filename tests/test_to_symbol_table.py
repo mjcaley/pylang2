@@ -110,6 +110,8 @@ def test_function_rule(parser):
     assert 1 == result.num_locals
     assert 2 == result.num_args
     assert None is result.address
+    assert 0 == result.index
+    assert 1 == symbol_table_pass.function_index
 
 
 def test_function_rule_error_already_defined(parser):

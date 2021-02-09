@@ -24,12 +24,13 @@
 # assigns all bindings in set the VALUE
 
 from ...tree_transformer import TreeTransformer
-from ..ast import ErrorNode, ConstantNode, SymbolTableNode, SymbolKind, SymbolTableValue
+from ..ast import Constant, Type, ErrorNode, ConstantNode, SymbolTableNode, SymbolKind, SymbolTableValue
 
 
 class ResolveBindings(TreeTransformer):
     def __init__(self):
         self.definitions = {}
+        self.nodes = {}
         self.symbol_table = {}
         self.constants = set()
         super().__init__()
@@ -37,6 +38,7 @@ class ResolveBindings(TreeTransformer):
     def transform(self, tree: SymbolTableNode):
         definitions = tree.find_data("definition")
         self.definitions = {definition.symbol: definition.children[0] for definition in definitions}
+        self.nodes = {node.symbol: node for node in tree.find_pred(lambda t: t.data in ("definition", "function", "label"))}
         self.symbol_table = tree.symbol_table
         self.constants = tree.constants
 
@@ -68,12 +70,20 @@ class ResolveBindings(TreeTransformer):
             else:
                 visited.add(symbol)
 
-            if symbol_value.kind == SymbolKind.Constant:
-                break
+            if symbol_value.kind == SymbolKind.Unknown:
+                symbol = self.nodes[symbol].children[0].value
             else:
-                symbol = self.definitions[symbol].children[0].value
+                break
 
         self.symbol_table[tree.symbol] = symbol_value
-        constant_node = self.definitions[symbol]
-
-        return ConstantNode(constant_node.constant, constant_node.data, [], tree.meta)
+        node = self.nodes[symbol]
+        if symbol_value.kind == SymbolKind.Function:
+            return ConstantNode(Constant(Type.UInt64, node.index), node.data, [], tree.meta)
+        elif symbol_value.kind == SymbolKind.Constant:
+            return ConstantNode(node.constant, node.data, [], tree.meta)
+        elif symbol_value.kind == SymbolKind.Struct:
+            return ConstantNode(node.index, node.data, [], tree.meta)
+        elif symbol_value.kind == SymbolKind.Label:
+            return ConstantNode(node.address, node.data, [], tree.meta)
+        else:
+            return ErrorNode(f"{symbol} cannot be resolved", [tree], tree.meta)

@@ -1,7 +1,7 @@
 import argparse
 
 from pylang2.assembler.parser import parser
-from pylang2.assembler.passes.to_ast import ToAST
+from pylang2.assembler.passes.code_generation import ToAST
 from pylang2.assembler.passes.to_symbol_table import ToSymbolTableAST
 from pylang2.assembler.passes.print_ast import PrintAST
 from pylang2.assembler.passes.bindings_to_constants import BindingsToConstants

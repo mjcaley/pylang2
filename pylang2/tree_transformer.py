@@ -51,44 +51,20 @@ class TreeTransformer:
         return self._transform(tree)
 
 
-class TreeTransformerInPlace:
+class TreeTransformerTopDown(TreeTransformer):
     def __init__(self, visit_tokens=True):
-        self.visit_tokens = visit_tokens
-
-    def _transform(self, node):
-        try:
-            if isinstance(node, Tree):
-                self._transform_tree(node)
-            else:
-                self._transform_token(node)
-        except Discard:
-            pass
-
-    def _transform_token(self, token: Token):
-        if not self.visit_tokens:
-            return
-
-        try:
-            f = getattr(self, token.type)
-        except AttributeError:
-            return
-
-        try:
-            f(token)
-        except (GrammarError, Discard):
-            raise
-        except Exception as e:
-            raise VisitError(token.type, token, e) from e
+        super().__init__(visit_tokens)
 
     def _transform_tree(self, tree: Tree):
-        for child in tree.children:
-            self._transform(child)
-
         try:
             rule = getattr(self, tree.data)
-            rule(tree)
         except AttributeError:
-            return
+            return tree
+        transformed_tree = rule(tree)
 
-    def transform(self, tree: Tree):
-        self._transform(tree)
+        children = [
+            self._transform(child) for child in tree.children if child is not None
+        ]
+        transformed_tree.children = children
+
+        return transformed_tree

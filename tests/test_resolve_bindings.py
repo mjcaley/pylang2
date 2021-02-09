@@ -14,6 +14,22 @@ def to_symbol_tree():
     return inner
 
 
+def test_binding_rule_function(to_symbol_tree):
+    tree = to_symbol_tree("""
+        define test1 = function
+        func function locals=0, args=0
+            ret
+    """)
+    resolve_bindings_pass = ResolveBindings()
+    resolved_tree = resolve_bindings_pass.transform(tree)
+
+    node = resolved_tree.children[0].children[0]
+    assert isinstance(node, ConstantNode)
+    assert Type.UInt64 == node.constant.type_
+    assert 0 == node.constant.value
+    assert SymbolKind.Function == resolved_tree.symbol_table["test1"].kind
+
+
 def test_binding_rule_constant(to_symbol_tree):
     tree = to_symbol_tree("""
         define test1 = 42 i32

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import auto, Enum, IntEnum, unique
-from typing import Any, Optional
+from typing import Any, NamedTuple, Optional
 
 from lark import Tree
 
@@ -62,6 +62,140 @@ class Constant:
         return hash((self.__class__, self.type_, self.value))
 
 
+class Kind(Enum):
+    Function = auto()
+    Struct = auto()
+    Label = auto()
+    Definition = auto()
+    String = auto()
+    Constant = auto()
+
+
+@dataclass
+class Symbol:
+    kind: Kind
+    type_: Type
+    value: Any
+    scope: Optional[dict[str, "Symbol"]]
+
+
+class SymbolTable:
+    def __init__(self):
+        self._table = {}
+        self._scope = []
+
+    def _current_scope(self):
+        scope = self._table
+        for key in self._scope:
+            scope = scope[key].scope
+
+        return scope
+
+    def declare(self, symbol, kind: Kind, type_: Type, value: Any = None):
+        if self.is_declared(symbol):
+            raise ValueError("Symbol already exists in scope")
+        else:
+            self._current_scope()[symbol] = Symbol(kind, type_, value, {})
+
+    def update(self, symbol, kind: Kind, type_: Type, value: Any = None):
+        symbol_value = self._current_scope()[symbol]
+        symbol_value.kind = kind
+        symbol_value.type_ = type_
+        symbol_value.value = value
+
+    def get(self, symbol):
+        return self._current_scope()[symbol]
+
+    def is_declared(self, symbol):
+        scope = self._current_scope()
+
+        return symbol in scope
+
+    def push_scope(self, symbol):
+        if self.is_declared(symbol):
+            self._scope.append(symbol)
+        else:
+            raise ValueError("Symbol does not exist")
+
+    def pop_scope(self):
+        try:
+            self._scope.pop()
+        except IndexError as e:
+            raise ValueError("Cannot pop from global scope") from e
+
+
+class ASTRoot(Tree):
+    def __init__(self, children, meta=None):
+        self.symbol_table = SymbolTable()
+        self.string_pool: set[str] = set()
+        super().__init__("start", children, meta)
+
+
+class ASTFunction(Tree):
+    def __init__(
+        self,
+        children,
+        symbol: str,
+        num_locals: int,
+        num_args: int,
+        name_index: Optional[int] = None,
+        index: Optional[int] = None,
+        address: Optional[int] = None,
+        meta=None,
+    ):
+        self.symbol = symbol
+        self.num_locals = num_locals
+        self.num_args = num_args
+        self.name_index = name_index
+        self.index = index
+        self.address = address
+        super().__init__("function", children, meta)
+
+
+class ASTStruct(Tree):
+    def __init__(
+        self, children, symbol: str, struct_index: Optional[int] = None, meta=None, index=None
+    ):
+        self.symbol = symbol
+        self.struct_index = struct_index
+        self.index = index
+        super().__init__("struct", children, meta)
+
+
+class ASTInstruction(Tree):
+    def __init__(self, data, children, instruction: Instruction, meta=None):
+        self.instruction = instruction
+        super().__init__(data, children, meta)
+
+
+class ASTLabel(Tree):
+    def __init__(self, children, symbol: str, meta=None, address: int = None):
+        self.symbol = symbol
+        self.address = address
+        super().__init__("label", children, meta)
+
+
+class ASTConstant(Tree):
+    def __init__(self, data, value, type_: Optional[Type] = None, meta=None):
+        self.value = value
+        self.type_ = type_
+        super().__init__(data, [], meta)
+
+
+class ASTString(Tree):
+    def __init__(self, value, index: Optional[int] = None, meta=None):
+        self.value = value
+        self.index = index
+        super().__init__("str_operand", [], meta)
+
+
+class ASTSymbol(Tree):
+    def __init__(self, symbol, meta=None):
+        self.symbol = symbol
+        super().__init__("binding", [], meta)
+
+
+# Deprecated
 class SymbolKind(Enum):
     Unknown = auto()
     Struct = auto()
@@ -143,6 +277,13 @@ class LabelNode(Tree):
 class ConstantNode(Tree):
     def __init__(self, constant, data, children, meta=None):
         self.constant = constant
+        super().__init__(data, children, meta)
+
+
+class StringNode(Tree):
+    def __init__(self, constant, index, data, children, meta=None):
+        self.constant = constant
+        self.index = index
         super().__init__(data, children, meta)
 
 

@@ -97,13 +97,25 @@ class SymbolTable:
         else:
             self._current_scope()[symbol] = Symbol(kind, type_, value, {})
 
-    def update(self, symbol, kind: Kind, type_: Type, value: Any = None):
+    def update(
+        self,
+        symbol,
+        kind: Kind = None,
+        type_: Type = None,
+        value: Any = None,
+        scope: "SymbolTable" = None,
+    ):
         symbol_value = self._current_scope()[symbol]
-        symbol_value.kind = kind
-        symbol_value.type_ = type_
-        symbol_value.value = value
+        if kind:
+            symbol_value.kind = kind
+        if type_:
+            symbol_value.type_ = type_
+        if value:
+            symbol_value.value = value
+        if scope:
+            symbol_value.scope = scope
 
-    def get(self, symbol):
+    def get(self, symbol) -> Symbol:
         return self._current_scope()[symbol]
 
     def is_declared(self, symbol):
@@ -125,10 +137,16 @@ class SymbolTable:
 
 
 class ASTRoot(Tree):
-    def __init__(self, children, meta=None):
-        self.symbol_table = SymbolTable()
-        self.string_pool: set[str] = set()
+    def __init__(self, children, symbol_table=None, string_pool=None, meta=None):
+        self.symbol_table = symbol_table or SymbolTable()
+        self.string_pool: list[str] = string_pool or []
         super().__init__("start", children, meta)
+
+
+class ASTDefinition(Tree):
+    def __init__(self, children, symbol, meta=None):
+        self.symbol = symbol
+        super().__init__("defininition", children, meta)
 
 
 class ASTFunction(Tree):
@@ -154,7 +172,12 @@ class ASTFunction(Tree):
 
 class ASTStruct(Tree):
     def __init__(
-        self, children, symbol: str, struct_index: Optional[int] = None, meta=None, index=None
+        self,
+        children,
+        symbol: str,
+        struct_index: Optional[int] = None,
+        meta=None,
+        index=None,
     ):
         self.symbol = symbol
         self.struct_index = struct_index
@@ -231,7 +254,13 @@ class SymbolNode(Tree):
 
 class StructNode(Tree):
     def __init__(
-        self, symbol: str, symbol_constant: Constant, data, children, meta=None, index=None
+        self,
+        symbol: str,
+        symbol_constant: Constant,
+        data,
+        children,
+        meta=None,
+        index=None,
     ):
         self.symbol = symbol
         self.index = index
@@ -289,6 +318,7 @@ class StringNode(Tree):
 
 # Code generation objects
 
+
 class Bytecode(IntEnum):
     Halt = auto()
     Noop = auto()
@@ -333,5 +363,5 @@ class CodeGenRootNode(Tree):
     def __init__(self, data, children, meta=None):
         self.function_pool = []
         self.string_pool = []
-        self.code = b''
+        self.code = b""
         super().__init__(data, children, meta)

@@ -1,8 +1,26 @@
-from ...tree_transformer import TreeTransformerTopDown
+from ...tree_transformer import TreeTransformer
 from ..ast import *
 
 
-class ASTPass(TreeTransformerTopDown):
+class ASTPass(TreeTransformer):
+    def __init__(self):
+        self.symbol_table = SymbolTable()
+        self.function_scope = SymbolTable()
+        self.string_pool = []
+
+        self._struct_index = 0
+        self._function_index = 0
+
+        super().__init__()
+
+    def start(self, tree):
+        return ASTRoot(
+            children=tree.children,
+            symbol_table=self.symbol_table,
+            string_pool=self.string_pool,
+            meta=tree.meta,
+        )
+
     def definition(self, tree):
         # Get tokens
         ident_token = tree.children[0]
@@ -11,18 +29,33 @@ class ASTPass(TreeTransformerTopDown):
         # Get definition values
         symbol = str(ident_token)
 
-        return ASTStruct(symbol=symbol, children=operand)
+        return ASTDefinition(symbol=symbol, children=operand)
 
     def struct(self, tree):
         # Get tokens
         ident_token = tree.children[0]
-        types = tree.children[1].children
+        types = tree.children[1]
 
         # Get struct values
         symbol = str(ident_token)
+        struct_index = self._struct_index
+        self._struct_index += 1
 
-        # Make node
-        return ASTStruct(symbol=symbol, children=types, meta=tree.meta)
+        struct_node = ASTStruct(
+            symbol=symbol, struct_index=struct_index, children=types, meta=tree.meta
+        )
+
+        if not self.symbol_table.is_declared(symbol):
+            self.symbol_table.declare(
+                symbol=symbol, kind=Kind.Struct, type_=Type.UInt64, value=struct_index
+            )
+            return struct_node
+        else:
+            return ErrorNode(
+                message=f"{symbol} already declared",
+                children=[struct_node],
+                meta=tree.meta,
+            )
 
     def types(self, tree):
         return [Type(token.value) for token in tree.children]
@@ -36,15 +69,35 @@ class ASTPass(TreeTransformerTopDown):
         symbol = str(ident_token)
         num_locals = int(locals_token)
         num_args = int(args_token)
+        function_index = self._function_index
 
-        # Make node
-        return ASTFunction(
+        function_node = ASTFunction(
+            children=statements,
             symbol=symbol,
             num_locals=num_locals,
             num_args=num_args,
-            children=statements,
+            index=function_index,
             meta=tree.meta,
         )
+
+        if not self.symbol_table.is_declared(symbol):
+            self.symbol_table.declare(
+                symbol=symbol,
+                kind=Kind.Function,
+                type_=Type.UInt64,
+                value=function_index,
+            )
+            scope = self.function_scope
+            self.function_scope = SymbolTable()
+            self.symbol_table.update(symbol, scope=scope)
+
+            return function_node
+        else:
+            return ErrorNode(
+                message=f"{symbol} already declared",
+                children=[function_node],
+                meta=tree.meta,
+            )
 
     def nullary_instruction(self, tree):
         instruction_token = tree.children[0]
@@ -70,7 +123,19 @@ class ASTPass(TreeTransformerTopDown):
         ident_token = tree.children[0]
         symbol = str(ident_token)
 
-        return ASTLabel(symbol=symbol, children=[], meta=tree.meta)
+        label_node = ASTLabel(symbol=symbol, children=[], meta=tree.meta)
+
+        if not self.function_scope.is_declared(symbol):
+            self.function_scope.declare(
+                symbol=symbol, kind=Kind.Label, type_=Type.UInt64
+            )
+            return label_node
+        else:
+            return ErrorNode(
+                message=f"{symbol} is already declared",
+                children=[label_node],
+                meta=tree.meta,
+            )
 
     def int_operand(self, tree):
         try:
@@ -95,8 +160,11 @@ class ASTPass(TreeTransformerTopDown):
 
     def str_operand(self, tree):
         value = str(tree.children[0]).strip('"')
+        if value not in self.string_pool:
+            self.string_pool.append(value)
+        index = self.string_pool.index(value)
 
-        return ASTString(value=value, meta=tree.meta)
+        return ASTString(value=value, index=index, meta=tree.meta)
 
     def binding(self, tree):
         symbol = str(tree.children[0])

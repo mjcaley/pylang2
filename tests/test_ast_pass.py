@@ -93,7 +93,6 @@ def test_function_rule(parser):
     assert Kind.Function == ast_pass.symbol_table.get("test").kind
     assert Type.UInt64 == ast_pass.symbol_table.get("test").type_
     assert 0 == ast_pass.symbol_table.get("test").value
-    assert None is not ast_pass.symbol_table.get("test").scope
 
 
 def test_function_declared(parser):
@@ -124,7 +123,7 @@ def test_unary_instruction_rule(parser):
 
     assert isinstance(ast, ASTInstruction)
     assert Instruction.LdConst == ast.instruction
-    assert isinstance(ast.children[0], ASTConstant)
+    assert isinstance(ast.children[0], ASTInteger)
 
 
 def test_label_rule(parser):
@@ -165,7 +164,7 @@ def test_float_operand(parser, test_input, expected_type):
     tree = parser("int_operand").parse(test_input)
     ast = ASTPass().transform(tree)
 
-    assert isinstance(ast, ASTConstant)
+    assert isinstance(ast, ASTInteger)
     assert 42 == ast.value
     assert expected_type == ast.type_
 
@@ -181,7 +180,7 @@ def test_float_operand(parser, test_input, expected_type):
     tree = parser("float_operand").parse(test_input)
     ast = ASTPass().transform(tree)
 
-    assert isinstance(ast, ASTConstant)
+    assert isinstance(ast, ASTFloat)
     assert 4.2 == ast.value
     assert expected_type == ast.type_
 
@@ -192,8 +191,8 @@ def test_str_operand_rule(parser):
     ast = ast_pass.transform(tree)
 
     assert isinstance(ast, ASTString)
-    assert "test" == ast.value
-    assert 0 == ast.index
+    assert "test" == ast.string_value
+    assert 0 == ast.value
     assert 0 == ast_pass.string_pool.index("test")
 
 
@@ -204,8 +203,8 @@ def test_str_operand_already_defined(parser):
     ast = ast_pass.transform(tree)
 
     assert isinstance(ast, ASTString)
-    assert "test" == ast.value
-    assert 0 == ast.index
+    assert "test" == ast.string_value
+    assert 0 == ast.value
     assert 0 == ast_pass.string_pool.index("test")
 
 

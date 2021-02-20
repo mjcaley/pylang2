@@ -24,12 +24,40 @@ class ASTPass(TreeTransformer):
     def definition(self, tree):
         # Get tokens
         ident_token = tree.children[0]
-        operand = tree.children[-1:]
+        operand = tree.children[1]
 
         # Get definition values
         symbol = str(ident_token)
 
-        return ASTDefinition(symbol=symbol, children=operand)
+        if operand.type_ in (
+            Type.UInt8,
+            Type.UInt16,
+            Type.UInt32,
+            Type.UInt64,
+            Type.Int8,
+            Type.Int16,
+            Type.Int32,
+            Type.Int64,
+            Type.Float32,
+            Type.Float64,
+        ):
+            self.symbol_table.declare(
+                symbol=symbol,
+                kind=Kind.Constant,
+                type_=operand.type_,
+                value=operand.value,
+            )
+        elif operand.type_ == Type.String:
+            self.symbol_table.declare(
+                symbol=symbol,
+                kind=Kind.String,
+                type_=operand.type_,
+                value=operand.value,
+            )
+        else:
+            self.symbol_table.declare(symbol=symbol, kind=Kind.Binding)
+
+        return ASTDefinition(symbol=symbol, children=[operand])
 
     def struct(self, tree):
         # Get tokens
@@ -71,6 +99,8 @@ class ASTPass(TreeTransformer):
         num_args = int(args_token)
         function_index = self._function_index
 
+        scope = self.function_scope
+        self.function_scope = SymbolTable()
         function_node = ASTFunction(
             children=statements,
             symbol=symbol,
@@ -78,6 +108,7 @@ class ASTPass(TreeTransformer):
             num_args=num_args,
             index=function_index,
             meta=tree.meta,
+            symbol_table=scope,
         )
 
         if not self.symbol_table.is_declared(symbol):
@@ -87,9 +118,6 @@ class ASTPass(TreeTransformer):
                 type_=Type.UInt64,
                 value=function_index,
             )
-            scope = self.function_scope
-            self.function_scope = SymbolTable()
-            self.symbol_table.update(symbol, scope=scope)
 
             return function_node
         else:
@@ -145,18 +173,14 @@ class ASTPass(TreeTransformer):
         mapped_type = Type(type_def.lower())
         value = int(tree.children[0].value)
 
-        return ASTConstant(
-            data=tree.data, value=value, type_=mapped_type, meta=tree.meta
-        )
+        return ASTInteger(value=value, type_=mapped_type, meta=tree.meta)
 
     def float_operand(self, tree):
         type_def = tree.children[1].type
         mapped_type = Type(type_def.lower())
         value = float(tree.children[0].value)
 
-        return ASTConstant(
-            data=tree.data, value=value, type_=mapped_type, meta=tree.meta
-        )
+        return ASTFloat(value=value, type_=mapped_type, meta=tree.meta)
 
     def str_operand(self, tree):
         value = str(tree.children[0]).strip('"')
@@ -164,7 +188,7 @@ class ASTPass(TreeTransformer):
             self.string_pool.append(value)
         index = self.string_pool.index(value)
 
-        return ASTString(value=value, index=index, meta=tree.meta)
+        return ASTString(value=index, string_value=value, meta=tree.meta)
 
     def binding(self, tree):
         symbol = str(tree.children[0])

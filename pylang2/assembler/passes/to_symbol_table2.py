@@ -1,11 +1,15 @@
 from lark import Visitor
 
+from ...tree_transformer import TreeTransformer
 from ..ast import *
 
 
-class ToSymbolTable(Visitor):
+class ToSymbolTable(TreeTransformer):
     def __init__(self):
+        self.symbol_table = SymbolTable()
         self.string_pool = []
+        self.struct_index = 0
+        self.function_index = 0
         super().__init__()
 
     def _add_to_string_pool(self, string):
@@ -31,111 +35,43 @@ class ToSymbolTable(Visitor):
         return ASTStruct(symbol, index, types)
 
     def struct(self, tree):
-        # Get tokens
-        ident_token = tree.children[0]
-        types = tree.children[1].children
+        tree.name_index = self._add_to_string_pool(tree.symbol)
 
-        # Get struct values
-        symbol = str(ident_token)
-        name = Constant(Type.String, symbol)
-        string_index = len(self.string_pool)
-        self.string_pool.append(name)
-
-        # Make node
-        if not self.symbol_table.is_declared(symbol):
-            index = self.struct_index
+        if not self.symbol_table.is_declared(tree.symbol):
+            tree.index = self.struct_index
             self.struct_index += 1
-            self.symbol_table.declare(symbol, Kind.Struct, Type.UInt64, self.struct_index)
-            return ASTStruct(symbol, string_index, types, tree.meta, index)
+            self.symbol_table.declare(tree.symbol, Kind.Struct, Type.UInt64, self.struct_index)
+            return tree
         else:
-            return ErrorNode(f"{symbol} already defined", [tree], tree.meta)
+            return ErrorNode(f"{tree.symbol} already defined", [tree], tree.meta)
 
     def function(self, tree):
-        # Get tokens
-        ident_token, locals_token, args_token, _ = tree.children
-        statements = tree.children[3:]
-
-        # Get function values
-        symbol = str(ident_token)
-        string_index = self._add_to_string_pool(symbol)
-        function_index = self.function_index
+        tree.name_index = self._add_to_string_pool(tree.symbol)
+        tree.index = self.function_index
         self.function_index += 1
 
-        # Make node
-        if not self.symbol_table.is_declared(symbol):
-            self.symbol_table.declare(symbol, Kind.Function, Type.UInt64, function_index)
-            self.symbol_table.push_scope(symbol)
+        if not self.symbol_table.is_declared(tree.symbol):
+            self.symbol_table.declare(tree.symbol, Kind.Function, Type.UInt64, function_index)
+            self.symbol_table.push_scope(tree.symbol)
+
+            return tree
         else:
-            return ErrorNode(f"{symbol} already defined", [tree], tree.meta)
-
-        function_node = ASTFunction(
-            symbol=symbol,
-            name_index=string_index,
-            num_locals=int(locals_token),
-            num_args=int(args_token),
-            index=function_index,
-            children=statements,
-            meta=tree.meta,
-        )
-
-        return function_node
-
-    def nullary_instruction(self, tree):
-        instruction_token = tree.children[0]
-
-        return InstructionNode(
-            Instruction(str(instruction_token)), tree.data, tree.children, tree.meta
-        )
-
-    def unary_instruction(self, tree):
-        instruction_token = tree.children[0]
-
-        return InstructionNode(
-            Instruction(str(instruction_token)), tree.data, tree.children[1:], tree.meta
-        )
+            return ErrorNode(f"{tree.symbol} already defined", [tree], tree.meta)
 
     def label(self, tree):
-        ident_token = tree.children[0]
-        name = str(ident_token)
+        if self.symbol_table.is_declared(tree.symbol):
+            self.symbol_table.declare(tree.symbol, Kind.Label, Type.UInt64)
 
-        node = LabelNode(name, tree.data, [], tree.meta)
-        if self.symbol_table.is_declared(name):
-            self.symbol_table.declare(name, Kind.Label, Type.UInt64)
-            return node
+            return tree
         else:
-            return ErrorNode(f"{name} already defined", [node], tree.meta)
-
-    def int_operand(self, tree):
-        try:
-            type_def = tree.children[1].type
-        except IndexError:
-            type_def = "i32"
-        mapped_type = Type(type_def.lower())
-        value_token = tree.children[0]
-        constant = Constant(mapped_type, int(value_token.value))
-
-        return ConstantNode(constant, tree.data, [], tree.meta)
-
-    def float_operand(self, tree):
-        type_def = tree.children[1].type
-        mapped_type = Type(type_def.lower())
-        value_token = tree.children[0]
-        constant = Constant(mapped_type, float(value_token.value))
-
-        return ConstantNode(constant, tree.data, [], tree.meta)
+            return ErrorNode(f"{tree.symbol} already defined", [tree], tree.meta)
 
     def str_operand(self, tree):
-        value_token = str(tree.children[0]).strip('"')
         try:
-            index = self.string_pool.index(value_token)
+            index = self.string_pool.index(tree.value)
         except ValueError:
             index = len(self.string_pool)
-            self.string_pool.append(value_token)
-        constant = Constant(Type.String, value_token)
+            self.string_pool.append(tree.value)
+        tree.index = index
 
-        return StringNode(constant, index, tree.data, [], tree.meta)
-
-    def binding(self, tree):
-        symbol = str(tree.children[0])
-
-        return SymbolNode(symbol, tree.data, tree.children, tree.meta)
+        return tree

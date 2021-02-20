@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import auto, Enum, IntEnum, unique
-from typing import Any, NamedTuple, Optional
+from typing import Any, Optional
 
 from lark import Tree
 
@@ -66,36 +66,29 @@ class Kind(Enum):
     Function = auto()
     Struct = auto()
     Label = auto()
-    Definition = auto()
     String = auto()
     Constant = auto()
+    Binding = auto()
 
 
 @dataclass
 class Symbol:
     kind: Kind
-    type_: Type
-    value: Any
-    scope: Optional[dict[str, "Symbol"]]
+    type_: Optional[Type] = None
+    value: Any = None
 
 
 class SymbolTable:
     def __init__(self):
         self._table = {}
-        self._scope = []
 
-    def _current_scope(self):
-        scope = self._table
-        for key in self._scope:
-            scope = scope[key].scope
-
-        return scope
-
-    def declare(self, symbol, kind: Kind, type_: Type, value: Any = None):
+    def declare(
+        self, symbol, kind: Kind, type_: Optional[Type] = None, value: Any = None
+    ):
         if self.is_declared(symbol):
             raise ValueError("Symbol already exists in scope")
         else:
-            self._current_scope()[symbol] = Symbol(kind, type_, value, {})
+            self._table[symbol] = Symbol(kind, type_, value)
 
     def update(
         self,
@@ -103,37 +96,20 @@ class SymbolTable:
         kind: Kind = None,
         type_: Type = None,
         value: Any = None,
-        scope: "SymbolTable" = None,
     ):
-        symbol_value = self._current_scope()[symbol]
+        symbol_value = self._table[symbol]
         if kind:
             symbol_value.kind = kind
         if type_:
             symbol_value.type_ = type_
         if value:
             symbol_value.value = value
-        if scope:
-            symbol_value.scope = scope
 
     def get(self, symbol) -> Symbol:
-        return self._current_scope()[symbol]
+        return self._table[symbol]
 
     def is_declared(self, symbol):
-        scope = self._current_scope()
-
-        return symbol in scope
-
-    def push_scope(self, symbol):
-        if self.is_declared(symbol):
-            self._scope.append(symbol)
-        else:
-            raise ValueError("Symbol does not exist")
-
-    def pop_scope(self):
-        try:
-            self._scope.pop()
-        except IndexError as e:
-            raise ValueError("Cannot pop from global scope") from e
+        return symbol in self._table
 
 
 class ASTRoot(Tree):
@@ -146,7 +122,7 @@ class ASTRoot(Tree):
 class ASTDefinition(Tree):
     def __init__(self, children, symbol, meta=None):
         self.symbol = symbol
-        super().__init__("defininition", children, meta)
+        super().__init__("definition", children, meta)
 
 
 class ASTFunction(Tree):
@@ -159,6 +135,7 @@ class ASTFunction(Tree):
         name_index: Optional[int] = None,
         index: Optional[int] = None,
         address: Optional[int] = None,
+        symbol_table: Optional[SymbolTable] = None,
         meta=None,
     ):
         self.symbol = symbol
@@ -167,6 +144,7 @@ class ASTFunction(Tree):
         self.name_index = name_index
         self.index = index
         self.address = address
+        self.symbol_table = symbol_table or SymbolTable()
         super().__init__("function", children, meta)
 
 
@@ -198,24 +176,37 @@ class ASTLabel(Tree):
         super().__init__("label", children, meta)
 
 
-class ASTConstant(Tree):
-    def __init__(self, data, value, type_: Optional[Type] = None, meta=None):
-        self.value = value
+class ASTOperand(Tree):
+    def __init__(
+        self, data, type_: Optional[Type] = None, value: Any = None, meta=None
+    ):
         self.type_ = type_
+        self.value = value
         super().__init__(data, [], meta)
 
 
-class ASTString(Tree):
-    def __init__(self, value, index: Optional[int] = None, meta=None):
-        self.value = value
-        self.index = index
-        super().__init__("str_operand", [], meta)
+class ASTInteger(ASTOperand):
+    def __init__(self, type_: Optional[Type] = None, value: Any = None, meta=None):
+        super().__init__("int_operand", type_, value, meta)
 
 
-class ASTSymbol(Tree):
-    def __init__(self, symbol, meta=None):
+class ASTFloat(ASTOperand):
+    def __init__(self, type_: Optional[Type] = None, value: Any = None, meta=None):
+        super().__init__("float_operand", type_, value, meta)
+
+
+class ASTString(ASTOperand):
+    def __init__(self, value: int, string_value: str, meta=None):
+        self.string_value = string_value
+        super().__init__("str_operand", Type.String, value, meta)
+
+
+class ASTSymbol(ASTOperand):
+    def __init__(
+        self, symbol, type_: Optional[Type] = None, value: Any = None, meta=None
+    ):
         self.symbol = symbol
-        super().__init__("binding", [], meta)
+        super().__init__("binding", type_, value, meta)
 
 
 # Deprecated

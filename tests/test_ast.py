@@ -44,37 +44,3 @@ def test_update():
     assert Kind.Constant == result.kind
     assert Type.Int32 == result.type_
     assert 42 == result.value
-
-
-def test_scope_push():
-    symbol_table = SymbolTable()
-    symbol_table.declare("test", Kind.Function, Type.UInt64)
-    symbol_table.push_scope("test")
-
-    assert False is symbol_table.is_declared("test")
-    symbol_table.pop_scope()
-    assert True is symbol_table.is_declared("test")
-
-
-def test_push_scope_fails():
-    symbol_table = SymbolTable()
-
-    with pytest.raises(ValueError):
-        symbol_table.push_scope("test")
-
-
-def test_pop_scope():
-    symbol_table = SymbolTable()
-    symbol_table.declare("test", Kind.Function, Type.UInt64)
-
-    symbol_table.push_scope("test")
-    assert False is symbol_table.is_declared("test")
-    symbol_table.pop_scope()
-    assert True is symbol_table.is_declared("test")
-
-
-def test_pop_scope_top():
-    symbol_table = SymbolTable()
-
-    with pytest.raises(ValueError):
-        symbol_table.pop_scope()

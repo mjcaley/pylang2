@@ -14,7 +14,19 @@ def test_init():
     vm = ASTVirtualMachine(ast)
 
     assert ast is vm.tree
-    assert "test" in vm.definition_map
+    assert "test" in vm._definition_map
+
+
+def test_notimplemented():
+    tree = parser.parse("""
+    func test locals=0, args=0
+        ret
+    """)
+    ast = ASTPass().transform(tree)
+    vm = ASTVirtualMachine(ast)
+
+    with pytest.raises(NotImplementedError):
+        vm.visit(None)
 
 
 def test_integer():
@@ -23,11 +35,11 @@ def test_integer():
     """)
     ast = ASTPass().transform(tree)
     vm = ASTVirtualMachine(ast)
-    result = vm.run()
+    result = vm.run(ast.children[0])
 
-    assert Kind.Constant == result.symbol_table.get("test").kind
-    assert Type.Int32 == result.symbol_table.get("test").type_
-    assert 42 == result.symbol_table.get("test").value
+    assert Kind.Constant == result.kind
+    assert Type.Int32 == result.type_
+    assert 42 == result.value
 
 
 def test_float():
@@ -36,11 +48,11 @@ def test_float():
     """)
     ast = ASTPass().transform(tree)
     vm = ASTVirtualMachine(ast)
-    result = vm.run()
+    result = vm.run(ast.children[0])
 
-    assert Kind.Constant == result.symbol_table.get("test").kind
-    assert Type.Float32 == result.symbol_table.get("test").type_
-    assert 42 == result.symbol_table.get("test").value
+    assert Kind.Constant == result.kind
+    assert Type.Float32 == result.type_
+    assert 42 == result.value
 
 
 def test_string():
@@ -49,11 +61,11 @@ def test_string():
     """)
     ast = ASTPass().transform(tree)
     vm = ASTVirtualMachine(ast)
-    result = vm.run()
+    result = vm.run(ast.children[0])
 
-    assert Kind.String == result.symbol_table.get("test").kind
-    assert Type.String == result.symbol_table.get("test").type_
-    assert 0 == result.symbol_table.get("test").value
+    assert Kind.String == result.kind
+    assert Type.String == result.type_
+    assert 0 == result.value
 
 
 def test_symbol():
@@ -63,11 +75,11 @@ def test_symbol():
     """)
     ast = ASTPass().transform(tree)
     vm = ASTVirtualMachine(ast)
-    result = vm.run()
+    result = vm.run(ast.children[0])
 
-    assert Kind.Constant == result.symbol_table.get("test").kind
-    assert Type.Int32 == result.symbol_table.get("test").type_
-    assert 42 == result.symbol_table.get("test").value
+    assert Kind.Constant == result.kind
+    assert Type.Int32 == result.type_
+    assert 42 == result.value
 
 
 def test_recursive():
@@ -79,4 +91,4 @@ def test_recursive():
     vm = ASTVirtualMachine(ast)
 
     with pytest.raises(RecursionError):
-        vm.run()
+        vm.run(ast.children[0])

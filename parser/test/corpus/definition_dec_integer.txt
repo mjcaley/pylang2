@@ -1,0 +1,15 @@
+=================================
+Definition with integer parameter
+=================================
+
+define test i32 = 42
+
+---
+
+(start
+    (definition
+        (identifier)
+        (type)
+        (dec_integer_literal)
+    )
+)

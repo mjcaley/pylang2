@@ -1,0 +1,15 @@
+======================
+Definition with string
+======================
+
+define test str = "example string"
+
+---
+
+(start
+    (definition
+        (identifier)
+        (type)
+        (str_literal)
+    )
+)

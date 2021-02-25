@@ -1,0 +1,15 @@
+====================
+Struct with one type
+====================
+
+struct test
+    i32
+
+---
+
+(start
+    (struct
+        (identifier)
+        (type)
+    )
+)

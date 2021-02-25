@@ -1,0 +1,16 @@
+==========================
+Struct with multiple types
+==========================
+
+struct test
+    u64, i32
+
+---
+
+(start
+    (struct
+        (identifier)
+        (type)
+        (type)
+    )
+)

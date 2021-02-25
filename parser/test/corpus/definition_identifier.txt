@@ -1,0 +1,15 @@
+==========================
+Definition with identifier
+==========================
+
+define test i32 = ident
+
+---
+
+(start
+    (definition
+        (identifier)
+        (type)
+        (identifier)
+    )
+)

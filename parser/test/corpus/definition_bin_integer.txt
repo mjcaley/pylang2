@@ -1,0 +1,15 @@
+========================================
+Definition with binary integer parameter
+========================================
+
+define test i32 = 0b01101
+
+---
+
+(start
+    (definition
+        (identifier)
+        (type)
+        (bin_integer_literal)
+    )
+)

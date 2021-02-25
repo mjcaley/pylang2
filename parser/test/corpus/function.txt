@@ -1,0 +1,26 @@
+========
+Function
+========
+
+func test_func locals=0, args=0
+    loop:
+    ldconst i32 42
+    ret
+
+---
+
+(start
+    (function
+        (identifier)
+        (dec_integer_literal)
+        (dec_integer_literal)
+        (statements
+            (label (identifier))
+            (instruction
+                (type)
+                (dec_integer_literal)
+            )
+            (instruction)
+        )
+    )
+)

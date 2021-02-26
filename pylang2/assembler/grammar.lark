@@ -1,25 +1,56 @@
 start : (struct | definition | function)*
 
-struct : "struct" CNAME types
-types: (_int | _float | _str | _addr)+
+struct : "struct" CNAME _struct_types
+_struct_types : _type ("," _type)*
 
-definition : "define" CNAME "=" _operand
+definition : "define" CNAME _type "=" _operand
 
-function : "func" CNAME "locals" "=" INT "," "args" "=" INT statements
+function : "func" CNAME _function_params statements
+_function_params : (locals "," args) | (args "," locals)
+locals : "locals" "=" INT
+args : "args" "=" INT
 
 statements : _statement+
-_statement : nullary_instruction | unary_instruction | label
-nullary_instruction : (HALT | NOOP
+_statement : instruction | label
+
+instruction : (_nullary_instruction _type?)
+            | (_unary_instruction _type _operand)
+_nullary_instruction : (HALT | NOOP
                 | ADD | SUB | MUL | DIV | MOD
                 | POP
                 | JMP | JMPT | JMPF
                 | TESTEQ | TESTNE | TESTLT | TESTGT
                 | CALLVIRT | RET)
-unary_instruction : (LDCONST | LDLOCAL | STLOCAL
+_unary_instruction : (LDCONST | LDLOCAL | STLOCAL
               | CALLFUNC
               | NEWSTRUCT | LDFIELD | STFIELD
-              | NEWARRAY | LDELEM | STELEM) _operand
+              | NEWARRAY | LDELEM | STELEM)
+
 label: CNAME ":"
+
+_operand : _number_literal | string_literal | binding
+
+_type : _int | _float | _str | _addr | _void
+_int : I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64
+_float : F32 | F64
+_str : STR
+_addr : ADDR
+_void : VOID
+
+_number_literal : SIGN? (_int_literal | float_literal)
+_int_literal : dec_integer | hex_integer | bin_integer
+dec_integer : INT
+hex_integer : "0x" HEXADECIMAL
+bin_integer : "0b" BINARY+
+float_literal : DECIMAL
+string_literal : ESCAPED_STRING
+
+binding : CNAME
+
+SIGN : "+" | "-"
+HEXADECIMAL : HEXDIGIT+
+BINDIGIT : "0" | "1"
+BINARY : BINDIGIT+
 
 HALT : "halt"
 NOOP : "noop"
@@ -49,20 +80,6 @@ NEWARRAY : "newarray"
 LDELEM : "ldelem"
 STELEM : "stelem"
 
-_operand : int_operand
-    | float_operand
-    | str_operand
-    | binding
-int_operand : SIGNED_INT _int?
-float_operand : SIGNED_FLOAT _float
-str_operand : ESCAPED_STRING STR?
-
-_int : I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64
-_float : F32 | F64
-_str : STR
-_addr : ADDR
-binding : CNAME
-
 I8 : "i8"
 I16 : "i16"
 I32 : "i32"
@@ -75,11 +92,12 @@ F32 : "f32"
 F64 : "f64"
 ADDR : "addr"
 STR : "str"
+VOID : "void"
 
 %import common.ESCAPED_STRING
-%import common.SIGNED_FLOAT
-%import common.SIGNED_INT
 %import common.INT
+%import common.HEXDIGIT
+%import common.DECIMAL
 %import common.CNAME
 %import common.WS
 %ignore WS

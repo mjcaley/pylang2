@@ -209,6 +209,12 @@ class ASTSymbol(ASTOperand):
         super().__init__("binding", type_, value, meta)
 
 
+class ASTLiteral(Tree):
+    def __init__(self, value: Any, data: str, meta=None):
+        self.value = value
+        super().__init__(data, [], meta)
+
+
 # Deprecated
 class SymbolKind(Enum):
     Unknown = auto()

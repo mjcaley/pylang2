@@ -1,5 +1,5 @@
 from lark import Token, Tree, Discard
-from lark.visitors import GrammarError, VisitError
+from lark.exceptions import GrammarError, VisitError
 
 
 class TreeTransformer:
@@ -9,13 +9,12 @@ class TreeTransformer:
         self.visit_tokens = visit_tokens
 
     def _transform(self, node):
-        try:
-            if isinstance(node, Tree):
-                return self._transform_tree(node)
-            else:
-                return self._transform_token(node)
-        except Discard:
-            pass
+        if isinstance(node, Tree):
+            return self._transform_tree(node)
+        elif isinstance(node, Token):
+            return self._transform_token(node)
+        else:
+            return node
 
     def _transform_token(self, token: Token):
         if not self.visit_tokens:
@@ -35,9 +34,7 @@ class TreeTransformer:
                 raise VisitError(token.type, token, e) from e
 
     def _transform_tree(self, tree: Tree):
-        children = [
-            self._transform(child) for child in tree.children if child is not None
-        ]
+        children = [self._transform(child) for child in tree.children]
         tree.children = children
 
         try:

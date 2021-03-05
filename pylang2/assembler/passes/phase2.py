@@ -9,7 +9,9 @@ from ...tree_transformer import TreeTransformer
 class ASTVirtualMachine:
     def __init__(self, tree):
         self.tree = tree
-        self._definition_map = {item.symbol: item for item in tree.find_data("definition")}
+        self._definition_map = {
+            item.symbol: item for item in tree.find_data("definition")
+        }
         self._stack = []
 
     def is_recursive(self):

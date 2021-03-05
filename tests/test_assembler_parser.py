@@ -77,77 +77,99 @@ def test_parses_statement(parser, test_input, expected):
     assert expected == result.children[0].data
 
 
-@pytest.mark.parametrize("test_input,expected_instruction", [
-    ("halt", "HALT"),
-    ("noop", "NOOP"),
-    ("pop", "POP"),
-    ("ret", "RET"),
-])
-def test_parses_void_nullary_instruction_none_parameter(parser, test_input, expected_instruction):
+@pytest.mark.parametrize(
+    "test_input,expected_instruction",
+    [
+        ("halt", "HALT"),
+        ("noop", "NOOP"),
+        ("pop", "POP"),
+        ("ret", "RET"),
+    ],
+)
+def test_parses_void_nullary_instruction_none_parameter(
+    parser, test_input, expected_instruction
+):
     result = parser("instruction").parse(test_input)
 
     assert expected_instruction == result.children[0].type
     assert None is result.children[1]
 
 
-@pytest.mark.parametrize("test_input,expected_instruction,expected_type", [
-    ("halt void", "HALT", "VOID"),
-    ("noop void", "NOOP", "VOID"),
-    ("pop void", "POP", "VOID"),
-    ("ret void", "RET", "VOID"),
-])
-def test_parses_void_nullary_instruction_void_parameter(parser, test_input, expected_instruction, expected_type):
+@pytest.mark.parametrize(
+    "test_input,expected_instruction,expected_type",
+    [
+        ("halt void", "HALT", "VOID"),
+        ("noop void", "NOOP", "VOID"),
+        ("pop void", "POP", "VOID"),
+        ("ret void", "RET", "VOID"),
+    ],
+)
+def test_parses_void_nullary_instruction_void_parameter(
+    parser, test_input, expected_instruction, expected_type
+):
     result = parser("instruction").parse(test_input)
 
     assert expected_instruction == result.children[0].type
     assert expected_type == result.children[1].type
 
 
-@pytest.mark.parametrize("test_input,expected_instruction", [
-    ("testeq", "TESTEQ"),
-    ("testne", "TESTNE"),
-    ("testgt", "TESTGT"),
-    ("testlt", "TESTLT"),
-])
-def test_byte_nullary_instruction_none_parameter(parser, test_input, expected_instruction):
+@pytest.mark.parametrize(
+    "test_input,expected_instruction",
+    [
+        ("testeq", "TESTEQ"),
+        ("testne", "TESTNE"),
+        ("testgt", "TESTGT"),
+        ("testlt", "TESTLT"),
+    ],
+)
+def test_byte_nullary_instruction_none_parameter(
+    parser, test_input, expected_instruction
+):
     result = parser("instruction").parse(test_input)
 
     assert expected_instruction == result.children[0].type
     assert None is result.children[1]
 
 
-@pytest.mark.parametrize("test_input,expected_instruction,expected_type", [
-    ("testeq u8", "TESTEQ", "U8"),
-    ("testne u8", "TESTNE", "U8"),
-    ("testgt u8", "TESTGT", "U8"),
-    ("testlt u8", "TESTLT", "U8"),
-])
-def test_byte_nullary_instruction_u8_parameter(parser, test_input, expected_instruction, expected_type):
+@pytest.mark.parametrize(
+    "test_input,expected_instruction,expected_type",
+    [
+        ("testeq u8", "TESTEQ", "U8"),
+        ("testne u8", "TESTNE", "U8"),
+        ("testgt u8", "TESTGT", "U8"),
+        ("testlt u8", "TESTLT", "U8"),
+    ],
+)
+def test_byte_nullary_instruction_u8_parameter(
+    parser, test_input, expected_instruction, expected_type
+):
     result = parser("instruction").parse(test_input)
 
     assert expected_instruction == result.children[0].type
     assert expected_type == result.children[1].type
 
 
-@pytest.mark.parametrize("test_input,expected_instruction", [
-    ("jmp", "JMP"),
-    ("jmpt", "JMPT"),
-    ("jmpf", "JMPF"),
-    ("callvirt", "CALLVIRT"),
-])
-def test_index_nullary_instruction_none_parameter(parser, test_input, expected_instruction):
+@pytest.mark.parametrize(
+    "test_input,expected_instruction",
+    [
+        ("callvirt", "CALLVIRT"),
+    ],
+)
+def test_index_nullary_instruction_none_parameter(
+    parser, test_input, expected_instruction
+):
     result = parser("instruction").parse(test_input)
 
     assert expected_instruction == result.children[0].type
     assert None is result.children[1]
 
 
-@pytest.mark.parametrize("test_input,expected", [
-    ("jmp u64", "JMP"),
-    ("jmpt u64", "JMPT"),
-    ("jmpf u64", "JMPF"),
-    ("callvirt u64", "CALLVIRT"),
-])
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        ("callvirt u64", "CALLVIRT"),
+    ],
+)
 def test_index_nullary_instruction_u64_parameter(parser, test_input, expected):
     result = parser("instruction").parse(test_input)
 
@@ -155,31 +177,40 @@ def test_index_nullary_instruction_u64_parameter(parser, test_input, expected):
     assert "U64" == result.children[1].type
 
 
-@pytest.mark.parametrize("test_input,expected_instruction,expected_type", [
-    ("add i32", "ADD", "I32"),
-    ("sub i32", "SUB", "I32"),
-    ("mul i32", "MUL", "I32"),
-    ("div i32", "DIV", "I32"),
-    ("mod i32", "MOD", "I32"),
-])
-def test_typed_nullary_instruction(parser, test_input, expected_instruction, expected_type):
+@pytest.mark.parametrize(
+    "test_input,expected_instruction,expected_type",
+    [
+        ("add i32", "ADD", "I32"),
+        ("sub i32", "SUB", "I32"),
+        ("mul i32", "MUL", "I32"),
+        ("div i32", "DIV", "I32"),
+        ("mod i32", "MOD", "I32"),
+    ],
+)
+def test_typed_nullary_instruction(
+    parser, test_input, expected_instruction, expected_type
+):
     result = parser("instruction").parse(test_input)
 
     assert expected_instruction == result.children[0].type
     assert expected_type == result.children[1].type
 
 
-@pytest.mark.parametrize("test_input,expected", [
-    ("ldlocal 42", "LDLOCAL"),
-    ("stlocal 42", "STLOCAL"),
-    ("callfunc 42", "CALLFUNC"),
-    ("newstruct 42", "NEWSTRUCT"),
-    ("ldfield 42", "LDFIELD"),
-    ("stfield 42", "STFIELD"),
-    ("newarray 42", "NEWARRAY"),
-    ("ldelem 42", "LDELEM"),
-    ("stelem 42", "STELEM"),
-])
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        ("ldlocal 42", "LDLOCAL"),
+        ("stlocal 42", "STLOCAL"),
+        ("jmp 42", "JMP"),
+        ("jmpt 42", "JMPT"),
+        ("jmpf 42", "JMPF"),
+        ("callfunc 42", "CALLFUNC"),
+        ("ldfield 42", "LDFIELD"),
+        ("stfield 42", "STFIELD"),
+        ("ldelem 42", "LDELEM"),
+        ("stelem 42", "STELEM"),
+    ],
+)
 def test_index_unary_instruction(parser, test_input, expected):
     result = parser("instruction").parse(test_input)
 
@@ -188,22 +219,50 @@ def test_index_unary_instruction(parser, test_input, expected):
     assert None is not result.children[2]
 
 
-@pytest.mark.parametrize("test_input,expected", [
-    ("ldlocal u64 42", "LDLOCAL"),
-    ("stlocal u64 42", "STLOCAL"),
-    ("callfunc u64 42", "CALLFUNC"),
-    ("newstruct u64 42", "NEWSTRUCT"),
-    ("ldfield u64 42", "LDFIELD"),
-    ("stfield u64 42", "STFIELD"),
-    ("newarray u64 42", "NEWARRAY"),
-    ("ldelem u64 42", "LDELEM"),
-    ("stelem u64 42", "STELEM"),
-])
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        ("ldlocal u64 42", "LDLOCAL"),
+        ("stlocal u64 42", "STLOCAL"),
+        ("jmp u64 42", "JMP"),
+        ("jmpt u64 42", "JMPT"),
+        ("jmpf u64 42", "JMPF"),
+        ("callfunc u64 42", "CALLFUNC"),
+        ("ldfield u64 42", "LDFIELD"),
+        ("stfield u64 42", "STFIELD"),
+        ("ldelem u64 42", "LDELEM"),
+        ("stelem u64 42", "STELEM"),
+    ],
+)
 def test_index_unary_instruction_with_u64_parameter(parser, test_input, expected):
     result = parser("instruction").parse(test_input)
 
     assert expected == result.children[0].type
     assert "U64" == result.children[1].type
+    assert None is not result.children[2]
+
+
+@pytest.mark.parametrize("test_input,expected", [
+    ("newstruct 42", "NEWSTRUCT"),
+    ("newarray 42", "NEWARRAY")
+])
+def test_address_unary_instruction_with_none_parameter(parser, test_input, expected):
+    result = parser("instruction").parse(test_input)
+
+    assert expected == result.children[0].type
+    assert None is result.children[1]
+    assert None is not result.children[2]
+
+
+@pytest.mark.parametrize("test_input,expected", [
+    ("newstruct addr 42", "NEWSTRUCT"),
+    ("newarray addr 42", "NEWARRAY")
+])
+def test_address_unary_instruction_with_addr_parameter(parser, test_input, expected):
+    result = parser("instruction").parse(test_input)
+
+    assert expected == result.children[0].type
+    assert "ADDR" == result.children[1].type
     assert None is not result.children[2]
 
 
@@ -222,13 +281,18 @@ def test_parses_label(parser):
     assert "CNAME" == result.children[0].type
 
 
-@pytest.mark.parametrize("test_input,expected_sign,expected_literal", [
-    ("+42", "+", "42"),
-    ("-42", "-", "42"),
-    ("-4.2", "-", "4.2"),
-    ("-4.2", "-", "4.2"),
-])
-def test_parses_number_literal_with_sign(parser, test_input, expected_sign, expected_literal):
+@pytest.mark.parametrize(
+    "test_input,expected_sign,expected_literal",
+    [
+        ("+42", "+", "42"),
+        ("-42", "-", "42"),
+        ("-4.2", "-", "4.2"),
+        ("-4.2", "-", "4.2"),
+    ],
+)
+def test_parses_number_literal_with_sign(
+    parser, test_input, expected_sign, expected_literal
+):
     result = parser("number_literal").parse(test_input)
 
     assert expected_sign == result.children[0].value

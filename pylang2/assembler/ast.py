@@ -164,9 +164,10 @@ class ASTStruct(Tree):
 
 
 class ASTInstruction(Tree):
-    def __init__(self, data, children, instruction: Instruction, meta=None):
+    def __init__(self, children, instruction: Instruction, type_: Type, meta=None):
         self.instruction = instruction
-        super().__init__(data, children, meta)
+        self.type_ = type_
+        super().__init__("instruction", children, meta)
 
 
 class ASTLabel(Tree):

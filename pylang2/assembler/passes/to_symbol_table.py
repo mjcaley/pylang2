@@ -36,7 +36,9 @@ class ToSymbolTable(TreeTransformer):
 
         if symbol not in self.symbol_table:
             if isinstance(operand, ConstantNode):
-                self.symbol_table[symbol] = SymbolTableValue(SymbolKind.Constant, operand.constant.type_)
+                self.symbol_table[symbol] = SymbolTableValue(
+                    SymbolKind.Constant, operand.constant.type_
+                )
             else:
                 self.symbol_table[symbol] = SymbolTableValue(SymbolKind.Unknown, None)
         else:
@@ -81,7 +83,7 @@ class ToSymbolTable(TreeTransformer):
             tree.data,
             statements,
             tree.meta,
-            index=self.function_index
+            index=self.function_index,
         )
         self.function_index += 1
 

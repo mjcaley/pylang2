@@ -18,16 +18,19 @@ instruction : (_void_nullary_instruction [VOID])
             | (_index_nullary_instruction [U64])
             | (_typed_nullary_instruction _type)
             | (_index_unary_instruction [U64] _operand)
+            | (_addr_unary_instruction [ADDR] _operand)
             | (_typed_unary_instruction _type _operand)
 
 _void_nullary_instruction : HALT | NOOP | POP | RET
 _byte_nullary_instruction : TESTEQ | TESTNE | TESTGT | TESTLT
-_index_nullary_instruction : JMP | JMPT | JMPF | CALLVIRT
+_index_nullary_instruction : CALLVIRT
 _typed_nullary_instruction : ADD | SUB | MUL | DIV | MOD
 _index_unary_instruction : (LDLOCAL | STLOCAL
+                | JMP | JMPT | JMPF
                 | CALLFUNC
-                | NEWSTRUCT | LDFIELD | STFIELD
-                | NEWARRAY | LDELEM | STELEM)
+                | LDFIELD | STFIELD
+                | LDELEM | STELEM)
+_addr_unary_instruction : NEWSTRUCT | NEWARRAY
 _typed_unary_instruction : LDCONST
 
 label: CNAME ":"

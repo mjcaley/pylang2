@@ -7,9 +7,11 @@ from pylang2.assembler.parser import parser
 
 
 def test_init():
-    tree = parser.parse("""
+    tree = parser.parse(
+        """
     define test = 42
-    """)
+    """
+    )
     ast = ASTPass().transform(tree)
     vm = ASTVirtualMachine(ast)
 
@@ -18,10 +20,12 @@ def test_init():
 
 
 def test_notimplemented():
-    tree = parser.parse("""
+    tree = parser.parse(
+        """
     func test locals=0, args=0
         ret
-    """)
+    """
+    )
     ast = ASTPass().transform(tree)
     vm = ASTVirtualMachine(ast)
 
@@ -30,9 +34,11 @@ def test_notimplemented():
 
 
 def test_integer():
-    tree = parser.parse("""
+    tree = parser.parse(
+        """
     define test = 42
-    """)
+    """
+    )
     ast = ASTPass().transform(tree)
     vm = ASTVirtualMachine(ast)
     result = vm.run(ast.children[0])
@@ -43,9 +49,11 @@ def test_integer():
 
 
 def test_float():
-    tree = parser.parse("""
+    tree = parser.parse(
+        """
     define test = 42.0 f32
-    """)
+    """
+    )
     ast = ASTPass().transform(tree)
     vm = ASTVirtualMachine(ast)
     result = vm.run(ast.children[0])
@@ -56,9 +64,11 @@ def test_float():
 
 
 def test_string():
-    tree = parser.parse("""
+    tree = parser.parse(
+        """
     define test = "test string"
-    """)
+    """
+    )
     ast = ASTPass().transform(tree)
     vm = ASTVirtualMachine(ast)
     result = vm.run(ast.children[0])
@@ -69,10 +79,12 @@ def test_string():
 
 
 def test_symbol():
-    tree = parser.parse("""
+    tree = parser.parse(
+        """
     define test = reference
     define reference = 42
-    """)
+    """
+    )
     ast = ASTPass().transform(tree)
     vm = ASTVirtualMachine(ast)
     result = vm.run(ast.children[0])
@@ -83,10 +95,12 @@ def test_symbol():
 
 
 def test_recursive():
-    tree = parser.parse("""
+    tree = parser.parse(
+        """
         define test1 = test2
         define test2 = test1
-        """)
+        """
+    )
     ast = ASTPass().transform(tree)
     vm = ASTVirtualMachine(ast)
 

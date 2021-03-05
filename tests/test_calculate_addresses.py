@@ -8,7 +8,7 @@ from pylang2.assembler.passes.to_symbol_table import ToSymbolTable
 
 def test_visit(mocker):
     calculate_addresses_pass = CalculateAddresses()
-    visit_topdown_spy = mocker.spy(calculate_addresses_pass, 'visit_topdown')
+    visit_topdown_spy = mocker.spy(calculate_addresses_pass, "visit_topdown")
     tree = SymbolTableNode("mock", [])
     calculate_addresses_pass.visit(tree)
 
@@ -31,12 +31,14 @@ def test_start_rule():
 
 
 def test_function_rule():
-    tree = parser.parse("""
+    tree = parser.parse(
+        """
         func test1 locals=0, args=0
             ret
         func test2 locals=0, args=0
             ret
-    """)
+    """
+    )
     symbol_tree = ToSymbolTable().transform(tree)
     calculate_addresses_pass = CalculateAddresses()
     calculate_addresses_pass.visit_topdown(symbol_tree)
@@ -46,11 +48,13 @@ def test_function_rule():
 
 
 def test_nullary_instruction_rule():
-    tree = parser.parse("""
+    tree = parser.parse(
+        """
         func test locals=0, args=0
             noop
             ret
-    """)
+    """
+    )
     symbol_tree = ToSymbolTable().transform(tree)
     calculate_addresses_pass = CalculateAddresses()
     calculate_addresses_pass.visit_topdown(symbol_tree)
@@ -60,15 +64,15 @@ def test_nullary_instruction_rule():
     assert 1 == test_instructions[1].address
 
 
-@pytest.mark.parametrize("test_input,expected", [
-    ("ldconst 40 i8", 2)
-])
+@pytest.mark.parametrize("test_input,expected", [("ldconst 40 i8", 2)])
 def test_unary_instruction_rule(test_input, expected):
-    tree = parser.parse(f"""
+    tree = parser.parse(
+        f"""
         func test locals=0, args=0
             {test_input}
             ret
-    """)
+    """
+    )
     symbol_tree = ToSymbolTable().transform(tree)
     calculate_addresses_pass = CalculateAddresses()
     calculate_addresses_pass.visit_topdown(symbol_tree)
@@ -79,12 +83,14 @@ def test_unary_instruction_rule(test_input, expected):
 
 
 def test_label_rule():
-    tree = parser.parse(f"""
+    tree = parser.parse(
+        f"""
         func function locals=0, args=0
             noop
             test:
             ret
-    """)
+    """
+    )
     symbol_tree = ToSymbolTable().transform(tree)
     calculate_addresses_pass = CalculateAddresses()
     calculate_addresses_pass.visit_topdown(symbol_tree)
@@ -93,22 +99,27 @@ def test_label_rule():
     assert 1 == test_instructions[1].address
 
 
-@pytest.mark.parametrize("test_input,expected", [
-    ("ldconst 42 i8", 2),
-    ("ldconst 42 i16", 3),
-    ("ldconst 42 i32", 5),
-    ("ldconst 42 i64", 9),
-    ("ldconst 42 u8", 2),
-    ("ldconst 42 u16", 3),
-    ("ldconst 42 u32", 5),
-    ("ldconst 42 u64", 9),
-])
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        ("ldconst 42 i8", 2),
+        ("ldconst 42 i16", 3),
+        ("ldconst 42 i32", 5),
+        ("ldconst 42 i64", 9),
+        ("ldconst 42 u8", 2),
+        ("ldconst 42 u16", 3),
+        ("ldconst 42 u32", 5),
+        ("ldconst 42 u64", 9),
+    ],
+)
 def test_int_operand_rule(test_input, expected):
-    tree = parser.parse(f"""
+    tree = parser.parse(
+        f"""
         func test locals=0, args=0
             {test_input}
             ret
-    """)
+    """
+    )
     symbol_tree = ToSymbolTable().transform(tree)
     calculate_addresses_pass = CalculateAddresses()
     calculate_addresses_pass.visit_topdown(symbol_tree)
@@ -117,16 +128,21 @@ def test_int_operand_rule(test_input, expected):
     assert expected == test_instructions[1].address
 
 
-@pytest.mark.parametrize("test_input,expected", [
-    ("ldconst 42.0 f32", 5),
-    ("ldconst 42.0 f64", 9),
-])
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        ("ldconst 42.0 f32", 5),
+        ("ldconst 42.0 f64", 9),
+    ],
+)
 def test_float_operand_rule(test_input, expected):
-    tree = parser.parse(f"""
+    tree = parser.parse(
+        f"""
         func test locals=0, args=0
             {test_input}
             ret
-    """)
+    """
+    )
     symbol_tree = ToSymbolTable().transform(tree)
     calculate_addresses_pass = CalculateAddresses()
     calculate_addresses_pass.visit_topdown(symbol_tree)
@@ -136,11 +152,13 @@ def test_float_operand_rule(test_input, expected):
 
 
 def test_str_operand_rule():
-    tree = parser.parse(f"""
+    tree = parser.parse(
+        f"""
         func test locals=0, args=0
             ldconst "test"
             ret
-    """)
+    """
+    )
     symbol_tree = ToSymbolTable().transform(tree)
     calculate_addresses_pass = CalculateAddresses()
     calculate_addresses_pass.visit_topdown(symbol_tree)

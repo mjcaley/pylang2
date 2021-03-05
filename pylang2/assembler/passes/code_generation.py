@@ -17,4 +17,3 @@ class CodeGeneration(TreeTransformer):
 
     def function(self, tree):
         pass
-

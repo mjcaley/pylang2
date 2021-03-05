@@ -24,12 +24,13 @@ class ASTPass(TreeTransformer):
     def definition(self, tree):
         # Get tokens
         ident_token = tree.children[0]
-        operand = tree.children[1]
+        type_ = Type(tree.children[1].value)
+        operand = tree.children[2]
 
         # Get definition values
         symbol = str(ident_token)
 
-        if operand.type_ in (
+        if type_ in (
             Type.UInt8,
             Type.UInt16,
             Type.UInt32,
@@ -44,14 +45,14 @@ class ASTPass(TreeTransformer):
             self.symbol_table.declare(
                 symbol=symbol,
                 kind=Kind.Constant,
-                type_=operand.type_,
+                type_=type_,
                 value=operand.value,
             )
-        elif operand.type_ == Type.String:
+        elif type_ == Type.String:
             self.symbol_table.declare(
                 symbol=symbol,
                 kind=Kind.String,
-                type_=operand.type_,
+                type_=type_,
                 value=operand.value,
             )
         else:
@@ -62,7 +63,7 @@ class ASTPass(TreeTransformer):
     def struct(self, tree):
         # Get tokens
         ident_token = tree.children[0]
-        types = tree.children[1]
+        types = tree.children[1:]
 
         # Get struct values
         symbol = str(ident_token)
@@ -85,18 +86,16 @@ class ASTPass(TreeTransformer):
                 meta=tree.meta,
             )
 
-    def types(self, tree):
-        return [Type(token.value) for token in tree.children]
-
     def function(self, tree):
         # Get tokens
-        ident_token, locals_token, args_token, _ = tree.children
+        ident_token = tree.children[0]
+        param_tokens = {token.data: token.children[0] for token in tree.children[1:3]}
         statements = tree.children[3:]
 
         # Get function values
         symbol = str(ident_token)
-        num_locals = int(locals_token)
-        num_args = int(args_token)
+        num_locals = int(param_tokens["locals"])
+        num_args = int(param_tokens["args"])
         function_index = self._function_index
 
         scope = self.function_scope
@@ -127,24 +126,51 @@ class ASTPass(TreeTransformer):
                 meta=tree.meta,
             )
 
-    def nullary_instruction(self, tree):
+    def instruction(self, tree):
         instruction_token = tree.children[0]
+        type_token = tree.children[1]
+        try:
+            operand = [tree.children[2]]
+        except IndexError:
+            operand = []
+
+        instruction = Instruction(instruction_token.value)
+
+        if instruction in [
+            Instruction.Halt,
+            Instruction.Noop,
+            Instruction.Pop,
+            Instruction.Ret,
+        ]:
+            type_ = Type.Void
+        elif instruction in [
+            Instruction.TestEQ,
+            Instruction.TestNE,
+            Instruction.TestLT,
+            Instruction.TestGT,
+        ]:
+            type_ = Type.UInt8
+        elif instruction in [
+            Instruction.Jmp,
+            Instruction.JmpT,
+            Instruction.JmpF,
+            Instruction.CallVirt,
+            Instruction.LdLocal,
+            Instruction.StLocal,
+            Instruction.CallFunc,
+            Instruction.LdField,
+            Instruction.StField,
+            Instruction.LdElem,
+            Instruction.StElem,
+        ]:
+            type_ = Type.UInt64
+        elif instruction in [Instruction.NewStruct, Instruction.NewArray]:
+            type_ = Type.Address
+        else:
+            type_ = Type(type_token.value)
 
         return ASTInstruction(
-            data=tree.data,
-            instruction=Instruction(str(instruction_token)),
-            children=[],
-            meta=tree.meta,
-        )
-
-    def unary_instruction(self, tree):
-        instruction_token = tree.children[0]
-
-        return ASTInstruction(
-            data=tree.data,
-            instruction=Instruction(str(instruction_token)),
-            children=tree.children[1:],
-            meta=tree.meta,
+            children=operand, instruction=instruction, type_=type_, meta=tree.meta
         )
 
     def label(self, tree):
@@ -165,32 +191,38 @@ class ASTPass(TreeTransformer):
                 meta=tree.meta,
             )
 
-    def int_operand(self, tree):
-        try:
-            type_def = tree.children[1].type
-        except IndexError:
-            type_def = "i32"
-        mapped_type = Type(type_def.lower())
+    def dec_integer(self, tree):
         value = int(tree.children[0].value)
 
-        return ASTInteger(value=value, type_=mapped_type, meta=tree.meta)
+        return ASTLiteral(value=value, data="int_literal", meta=tree.meta)
 
-    def float_operand(self, tree):
-        type_def = tree.children[1].type
-        mapped_type = Type(type_def.lower())
+    def hex_integer(self, tree):
+        value = int(tree.children[0].value, base=16)
+
+        return ASTLiteral(value=value, data="int_literal", meta=tree.meta)
+
+    def bin_integer(self, tree):
+        value = int(tree.children[0].value, base=2)
+
+        return ASTLiteral(value=value, data="int_literal", meta=tree.meta)
+
+    def float_literal(self, tree):
         value = float(tree.children[0].value)
 
-        return ASTFloat(value=value, type_=mapped_type, meta=tree.meta)
+        return ASTLiteral(value=value, data=tree.data, meta=tree.meta)
 
-    def str_operand(self, tree):
+    def string_literal(self, tree):
         value = str(tree.children[0]).strip('"')
         if value not in self.string_pool:
             self.string_pool.append(value)
         index = self.string_pool.index(value)
 
-        return ASTString(value=index, string_value=value, meta=tree.meta)
+        return ASTLiteral(value=index, data=tree.data, meta=tree.meta)
 
     def binding(self, tree):
         symbol = str(tree.children[0])
 
         return ASTSymbol(symbol=symbol, meta=tree.meta)
+
+    def type(self, tree):
+        return Type(tree.value)

@@ -40,7 +40,9 @@ class ToSymbolTable(TreeTransformer):
         if not self.symbol_table.is_declared(tree.symbol):
             tree.index = self.struct_index
             self.struct_index += 1
-            self.symbol_table.declare(tree.symbol, Kind.Struct, Type.UInt64, self.struct_index)
+            self.symbol_table.declare(
+                tree.symbol, Kind.Struct, Type.UInt64, self.struct_index
+            )
             return tree
         else:
             return ErrorNode(f"{tree.symbol} already defined", [tree], tree.meta)
@@ -51,7 +53,9 @@ class ToSymbolTable(TreeTransformer):
         self.function_index += 1
 
         if not self.symbol_table.is_declared(tree.symbol):
-            self.symbol_table.declare(tree.symbol, Kind.Function, Type.UInt64, function_index)
+            self.symbol_table.declare(
+                tree.symbol, Kind.Function, Type.UInt64, function_index
+            )
             self.symbol_table.push_scope(tree.symbol)
 
             return tree
